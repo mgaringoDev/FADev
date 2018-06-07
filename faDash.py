@@ -1,5 +1,5 @@
 #%%
-# This is working copy of the imported scrollable table
+# Working copy of the scrollable and filterable tables
 #%% 
 # standard library
 import os
@@ -23,7 +23,7 @@ import csv, sqlite3
 from datetime import datetime
 import numpy as np
 import unicodedata
-#
+#%%
 ###########################
 # Data Manipulation / Model
 ###########################
@@ -149,6 +149,7 @@ def drawPieGraph(transactions):
     )
 
     return figure
+#%%
 #########################
 # Dashboard Layout / View
 #########################
@@ -302,7 +303,7 @@ app.layout = html.Div([
                         dt.DataTable(
                             # Initialise the rows
                             rows=[{}],                            
-                            row_selectable=True,
+                            row_selectable=False,
                             filterable=True,
                             sortable=True,
                             selected_row_indices=[],
@@ -345,13 +346,23 @@ app.layout = html.Div([
 #############################################
 # Interaction Between Components / Controller
 #############################################
-@app.callback(Output('table', 'rows'), [Input('field-dropdown', 'value')])
-def update_table(user_selection):
+@app.callback(
+    Output('table', 'rows'), 
+    [
+         Input('field-dropdown', 'value'),
+         Input(component_id='accountSelector', component_property='value'),
+         Input(component_id='categorySelector', component_property='value'),
+         Input(component_id='yearSelector', component_property='value')
+    ]
+)
+def update_table(user_selection,account,category,year):
     """
     For user selections, return the relevant table
     """
-    df = get_data_object(user_selection)
-    return df.to_dict('records')
+    transactions = getTransactionResults(account,category,year)
+#    df = get_data_object(user_selection)
+#    return df.to_dict('records')
+    return transactions.to_dict('records')
 
 # Load Categories in Dropdown
 @app.callback(
