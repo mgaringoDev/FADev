@@ -66,20 +66,41 @@ def getCategories(account):
 def getYear(account):
     '''Returns the list of categories that are stored in the database'''
     
-    getYearQuery = 'SELECT DISTINCT Date FROM myData WHERE Account=\'%s\'' % account    
-    years = fetch_data(getYearQuery)
-    yearList = []
-    for date in years['Date']:
-        dateParse = datetime.strptime(date, "%m/%d/%Y")
-        yearList.append(dateParse.year)    
+#    getYearQuery = 'SELECT DISTINCT Date FROM myData WHERE Account=\'%s\'' % account        
+#    getYearQuery = 'SELECT Date FROM myData WHERE CAST(SUBSTR(Date,7,4) as integer)=2014'
+    getYearQuery = 'SELECT SUBSTR(Date,7,4) FROM myData'
+    yearList = fetch_data(getYearQuery)   
     yearUnique = np.unique(yearList)
     return yearUnique
+
+def getTransactionResults(account,category,year):    
+    if category=='All':
+        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account FROM myData WHERE SUBSTR(date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+    else:
+        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account FROM myData WHERE SUBSTR(date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+        
+    transactions = fetch_data(getTransactionQuery)    
+    return transactions    
     
 
 #########################
 # Dashboard Layout / View
 #########################
 # Functions
+def generate_table(dataframe, max_rows=10):
+    '''Given dataframe, return template generated using Dash components
+    '''
+    
+    return html.Table(
+        # Header
+        [html.Tr([html.Th(col) for col in dataframe.columns])] +
+
+        # Body
+        [html.Tr([
+            html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+        ]) for i in range(min(len(dataframe), max_rows))]
+    )
+    
 def onLoad_GetData():
     '''Actions to perform upon initial page load'''
 
@@ -104,6 +125,10 @@ app.css.append_css({
     "external_url": "https://fonts.googleapis.com/icon?family=Material+Icons"
 })
 
+app.css.append_css({
+    "external_url": "myCSS.css"
+})
+
 
         
 my_js_url = 'https://code.getmdl.io/1.3.0/material.min.js'
@@ -113,7 +138,7 @@ app.scripts.append_script({
 
 app.layout = html.Div([
     # Links
-    html.Link(href='myCSS.css', rel='stylesheet'),
+#    html.Link(href='myCSS.css', rel='stylesheet'),
     
     # Page Header
     html.Header([
@@ -173,7 +198,14 @@ app.layout = html.Div([
 
 
                 # List
-                html.Div(['Table'],className="mdl-cell mdl-cell--4-col"),
+                html.Div([
+                    # Match Results Table
+                    html.Div(
+                        html.Table(id='transactionResults',style={'width': 'inherit'})
+                    ),
+                          
+                ],className="mdl-cell mdl-cell--4-col"),
+    
                 # Graphs
                 html.Div(['Graph'],className="mdl-cell mdl-cell--6-col"),
             
@@ -246,6 +278,19 @@ def populateDay(account):
         for day in days
     ]
 
+# Load Transaction results
+@app.callback(
+    Output(component_id='transactionResults', component_property='children'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value')
+        
+    ]
+)
+def loadTransaction(account,category,year):
+    transactions = getTransactionResults(account,category,year)
+    return generate_table(transactions, max_rows=50)
 
 # start Flask server
 if __name__ == '__main__':
