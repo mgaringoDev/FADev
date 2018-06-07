@@ -128,19 +128,9 @@ def drawPieGraph(transactions):
     categoryList = categoryList.tolist()    
     print(categoryList)
     
-    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
-    values = [4500,2500,1053,500]
-    print(labels)
-    print(values)
-
-    go.Pie(labels=labels, values=values)
-
-
-
     figure = go.Figure(
         data=[
              go.Pie(labels=categoryList, values=categorySumList)            
-#             go.Pie(labels=labels, values=values)
         ],
         layout=go.Layout(
             title='History Scatter Plot',
@@ -180,28 +170,6 @@ def onLoad_GetData():
 # Set up Dashboard and create layout
 app = dash.Dash()
 
-#%%
-DF_GAPMINDER = pd.read_csv(
-    'https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv'
-)
-DF_GAPMINDER = DF_GAPMINDER[DF_GAPMINDER['year'] == 2007]
-DF_GAPMINDER.loc[0:20]
-
-DF_SIMPLE = pd.DataFrame({
-    'x': ['A', 'B', 'C', 'D', 'E', 'F'],
-    'y': [4, 3, 1, 2, 3, 6],
-    'z': ['a', 'b', 'c', 'a', 'b', 'c']
-})
-    
-dataframes = {'DF_GAPMINDER': DF_GAPMINDER,
-              'DF_SIMPLE': DF_SIMPLE}
-
-
-def get_data_object(user_selection):
-    """
-    For user selections, return the relevant in-memory data frame.
-    """
-    return dataframes[user_selection]
 
 #%%
 app.css.append_css({
@@ -234,7 +202,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE',className="mdl-layout__header-row"),            
+            html.H1('TITLE V06 - Working copy of the scrollable and filterable tables',className="mdl-layout__header-row"),            
         ]),
             
     ],className="mdl-layout__header"),
@@ -292,14 +260,6 @@ app.layout = html.Div([
                 html.Div([
                     # ------------------------------------------------------------------------------
                      html.Div([
-#                        html.H4('DataTable'),
-#                        html.Label('Report type:', style={'font-weight': 'bold'}),
-                        dcc.Dropdown(
-                            id='field-dropdown',                            
-                            options=[{'label': df, 'value': df} for df in dataframes],
-                            value='DF_GAPMINDER',
-                            clearable=False
-                        ),
                         dt.DataTable(
                             # Initialise the rows
                             rows=[{}],                            
@@ -307,17 +267,12 @@ app.layout = html.Div([
                             filterable=True,
                             sortable=True,
                             selected_row_indices=[],
+                            max_rows_in_viewport = 20,
                             id='table'
                         ),
                         html.Div(id='selected-indexes')
                     ]),
                     # ------------------------------------------------------------------------------    
-                        
-                    # Transaction Table
-                    html.Div(
-                        html.Table(id='transactionResults',style={'width': 'inherit'})
-                    ),
-                          
                 ],className="mdl-cell mdl-cell--4-col"),
     
                 # Graphs
@@ -349,19 +304,16 @@ app.layout = html.Div([
 @app.callback(
     Output('table', 'rows'), 
     [
-         Input('field-dropdown', 'value'),
          Input(component_id='accountSelector', component_property='value'),
          Input(component_id='categorySelector', component_property='value'),
          Input(component_id='yearSelector', component_property='value')
     ]
 )
-def update_table(user_selection,account,category,year):
+def update_table(account,category,year):
     """
     For user selections, return the relevant table
     """
     transactions = getTransactionResults(account,category,year)
-#    df = get_data_object(user_selection)
-#    return df.to_dict('records')
     return transactions.to_dict('records')
 
 # Load Categories in Dropdown
@@ -421,21 +373,6 @@ def populateDay(account):
         {'label': day, 'value': day}
         for day in days
     ]
-
-# Load Transaction results
-@app.callback(
-    Output(component_id='transactionResults', component_property='children'),
-    [
-        Input(component_id='accountSelector', component_property='value'),
-        Input(component_id='categorySelector', component_property='value'),
-        Input(component_id='yearSelector', component_property='value')
-        
-    ]
-)
-def loadTransaction(account,category,year):
-    transactions = getTransactionResults(account,category,year)
-    return generate_table(transactions, max_rows=50)
-
 
 # Update line Graph
 @app.callback(
