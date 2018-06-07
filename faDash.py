@@ -7,6 +7,7 @@ import dash
 from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_html_components as html
+import plotly.plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 
@@ -18,6 +19,7 @@ from sqlalchemy import create_engine
 import csv, sqlite3
 from datetime import datetime
 import numpy as np
+import unicodedata
 #
 ###########################
 # Data Manipulation / Model
@@ -75,14 +77,75 @@ def getYear(account):
 
 def getTransactionResults(account,category,year):    
     if category=='All':
-        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account FROM myData WHERE SUBSTR(date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
     else:
-        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account FROM myData WHERE SUBSTR(date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
         
     transactions = fetch_data(getTransactionQuery)    
     return transactions    
     
+def drawLineGraph(transactions):
+    #Yearly Calculations
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] 
+    
+    dataPoints = []
+    for i in xrange(12):
+        dataPoints.append(0)
+    
+    numberOfTransactions = np.shape(transactions)[0]
+    for transactionNumber in xrange(numberOfTransactions):
+#        print(transactionNumber)
+        monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
+        dataPoints[monthIndex] += float(transactions['Amount'][transactionNumber])
+    
+    dataPointsCummulativeSum = np.array(dataPoints).cumsum()
 
+    figure = go.Figure(
+        data=[
+            go.Scatter(x=months, y=dataPoints, mode='lines+markers',name='Raw'),
+            go.Scatter(x=months, y=dataPointsCummulativeSum, mode='lines+markers',name='Cummulative Sum')
+        ],
+        layout=go.Layout(
+            title='History Scatter Plot',
+            showlegend=True
+        )
+    )
+
+    return figure
+
+def drawPieGraph(transactions):
+    
+    transactions['Amount'] = transactions['Amount'].apply(pd.to_numeric)
+    categorySum = transactions.groupby(['MainCategory']).sum()
+    categorySumList = np.abs(categorySum['Amount'])
+    categorySumList = categorySumList.tolist()
+    print(categorySumList)
+    
+    categoryList = np.unique(transactions['MainCategory'].astype(str))
+    categoryList = categoryList.tolist()    
+    print(categoryList)
+    
+    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
+    values = [4500,2500,1053,500]
+    print(labels)
+    print(values)
+
+    go.Pie(labels=labels, values=values)
+
+
+
+    figure = go.Figure(
+        data=[
+             go.Pie(labels=categoryList, values=categorySumList)            
+#             go.Pie(labels=labels, values=values)
+        ],
+        layout=go.Layout(
+            title='History Scatter Plot',
+            showlegend=True
+        )
+    )
+
+    return figure
 #########################
 # Dashboard Layout / View
 #########################
@@ -199,7 +262,7 @@ app.layout = html.Div([
 
                 # List
                 html.Div([
-                    # Match Results Table
+                    # Transaction Table
                     html.Div(
                         html.Table(id='transactionResults',style={'width': 'inherit'})
                     ),
@@ -207,7 +270,19 @@ app.layout = html.Div([
                 ],className="mdl-cell mdl-cell--4-col"),
     
                 # Graphs
-                html.Div(['Graph'],className="mdl-cell mdl-cell--6-col"),
+                html.Div([
+                    # Top Row Plots
+                    html.Div([
+                        #Scatter Plot
+                        dcc.Graph(id='lineGraph')
+                    ]),   
+                    
+                    # Bottom Row Plots
+                    html.Div([
+                        #Pie
+                        dcc.Graph(id='categoryGraph')
+                    ]),   
+                ],className="mdl-cell mdl-cell--6-col"),
             
             ],className="mdl-grid"),
                 
@@ -291,6 +366,43 @@ def populateDay(account):
 def loadTransaction(account,category,year):
     transactions = getTransactionResults(account,category,year)
     return generate_table(transactions, max_rows=50)
+
+
+# Update line Graph
+@app.callback(
+    Output(component_id='lineGraph', component_property='figure'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value')
+    ]
+)
+def updateDrawLineGraph(account,category,year):
+    transactions = getTransactionResults(account,category,year)
+
+    figure = []
+    if len(transactions) > 0:
+        figure = drawLineGraph(transactions)
+
+    return figure
+
+# Update category Graph
+@app.callback(
+    Output(component_id='categoryGraph', component_property='figure'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value')
+    ]
+)
+def updateDrawPieGraph(account,category,year):
+    transactions = getTransactionResults(account,category,year)
+
+    figure = []
+    if len(transactions) > 0:
+        figure = drawPieGraph(transactions)
+
+    return figure
 
 # start Flask server
 if __name__ == '__main__':
