@@ -1,3 +1,5 @@
+#%%
+# This is working copy of the imported scrollable table
 #%% 
 # standard library
 import os
@@ -7,6 +9,7 @@ import dash
 from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table_experiments as dt
 import plotly.plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
@@ -176,6 +179,30 @@ def onLoad_GetData():
 # Set up Dashboard and create layout
 app = dash.Dash()
 
+#%%
+DF_GAPMINDER = pd.read_csv(
+    'https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv'
+)
+DF_GAPMINDER = DF_GAPMINDER[DF_GAPMINDER['year'] == 2007]
+DF_GAPMINDER.loc[0:20]
+
+DF_SIMPLE = pd.DataFrame({
+    'x': ['A', 'B', 'C', 'D', 'E', 'F'],
+    'y': [4, 3, 1, 2, 3, 6],
+    'z': ['a', 'b', 'c', 'a', 'b', 'c']
+})
+    
+dataframes = {'DF_GAPMINDER': DF_GAPMINDER,
+              'DF_SIMPLE': DF_SIMPLE}
+
+
+def get_data_object(user_selection):
+    """
+    For user selections, return the relevant in-memory data frame.
+    """
+    return dataframes[user_selection]
+
+#%%
 app.css.append_css({
     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
 })
@@ -262,6 +289,29 @@ app.layout = html.Div([
 
                 # List
                 html.Div([
+                    # ------------------------------------------------------------------------------
+                     html.Div([
+#                        html.H4('DataTable'),
+#                        html.Label('Report type:', style={'font-weight': 'bold'}),
+                        dcc.Dropdown(
+                            id='field-dropdown',                            
+                            options=[{'label': df, 'value': df} for df in dataframes],
+                            value='DF_GAPMINDER',
+                            clearable=False
+                        ),
+                        dt.DataTable(
+                            # Initialise the rows
+                            rows=[{}],                            
+                            row_selectable=True,
+                            filterable=True,
+                            sortable=True,
+                            selected_row_indices=[],
+                            id='table'
+                        ),
+                        html.Div(id='selected-indexes')
+                    ]),
+                    # ------------------------------------------------------------------------------    
+                        
                     # Transaction Table
                     html.Div(
                         html.Table(id='transactionResults',style={'width': 'inherit'})
@@ -295,6 +345,14 @@ app.layout = html.Div([
 #############################################
 # Interaction Between Components / Controller
 #############################################
+@app.callback(Output('table', 'rows'), [Input('field-dropdown', 'value')])
+def update_table(user_selection):
+    """
+    For user selections, return the relevant table
+    """
+    df = get_data_object(user_selection)
+    return df.to_dict('records')
+
 # Load Categories in Dropdown
 @app.callback(
     Output(component_id='categorySelector', component_property='options'),
