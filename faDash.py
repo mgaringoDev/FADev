@@ -1,5 +1,5 @@
 #%%
-# Working copy of the scrollable and filterable tables
+# Append Current CSV Files Into One
 #%% 
 # standard library
 import os
@@ -32,7 +32,7 @@ conn = sqlite3.connect(":memory:", check_same_thread=False)
 cur = conn.cursor()
 cur.execute("CREATE TABLE myData (Date,Title,Comment,MainCategory,Subcategory,Account,Amount);") # use your column names here
 
-with open('data.csv','rb') as fin: # `with` statement available in 2.5+
+with open('TogetherProgrammed.csv','rb') as fin: # `with` statement available in 2.5+
     # csv.DictReader uses first line in file for column headings by default
     dr = csv.DictReader(fin) # comma is default delimiter
     to_db = [(i['Date'], i['Title'],i['Comment'], i['MainCategory'],i['Subcategory'], i['Account'],i['Amount']) for i in dr]
@@ -99,8 +99,7 @@ def drawLineGraph(transactions):
     for transactionNumber in xrange(numberOfTransactions):
 #        print(transactionNumber)
         monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
-        dataPoints[monthIndex] += float(transactions['Amount'][transactionNumber])
-    
+        dataPoints[monthIndex] += float(transactions['Amount'][transactionNumber])    
     dataPointsCummulativeSum = np.array(dataPoints).cumsum()
 
     figure = go.Figure(
@@ -202,7 +201,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE V06 - Working copy of the scrollable and filterable tables',className="mdl-layout__header-row"),            
+            html.H1('TITLE V07 - Append Current CSV Files Into One',className="mdl-layout__header-row"),            
         ]),
             
     ],className="mdl-layout__header"),
@@ -412,8 +411,17 @@ def updateDrawPieGraph(account,category,year):
 
 # start Flask server
 if __name__ == '__main__':
-    app.run_server(
-        debug=True,
-        host='0.0.0.0',
-        port=8050
-    )
+    try:
+        print('Trying to append all CSV files into TogetherProgrammed.csv')    
+        os.system('python combineData.py')
+        print('csv combine success.....')
+        print('Now running server')        
+        
+        app.run_server(
+            debug=True,
+            host='0.0.0.0',
+            port=8050
+        )
+    except: 
+        print('csv combine FAIL!!!')
+    
