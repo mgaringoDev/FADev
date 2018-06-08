@@ -1,5 +1,5 @@
 #%%
-# Append Current CSV Files Into One
+# Initialize and draw all accounts on the line graph 
 #%% 
 # standard library
 import os
@@ -30,14 +30,14 @@ import unicodedata
 #DataBase Generation
 conn = sqlite3.connect(":memory:", check_same_thread=False)
 cur = conn.cursor()
-cur.execute("CREATE TABLE myData (Date,Title,Comment,MainCategory,Subcategory,Account,Amount);") # use your column names here
+cur.execute("CREATE TABLE myData (Date,Title,Comment,MainCategory,Subcategory,Account,Amount,Balance);") # use your column names here
 
 with open('TogetherProgrammed.csv','rb') as fin: # `with` statement available in 2.5+
     # csv.DictReader uses first line in file for column headings by default
     dr = csv.DictReader(fin) # comma is default delimiter
-    to_db = [(i['Date'], i['Title'],i['Comment'], i['MainCategory'],i['Subcategory'], i['Account'],i['Amount']) for i in dr]
+    to_db = [(i['Date'], i['Title'],i['Comment'], i['MainCategory'],i['Subcategory'], i['Account'],i['Amount'],i['Balance']) for i in dr]
 
-cur.executemany("INSERT INTO myData (Date, Title, Comment,MainCategory,Subcategory,Account,Amount) VALUES (?, ?,?,?,?,?,?);", to_db)
+cur.executemany("INSERT INTO myData (Date, Title, Comment,MainCategory,Subcategory,Account,Amount,Balance) VALUES (?,?,?,?,?,?,?,?);", to_db)
 conn.commit()
 
 def fetch_data(q):    
@@ -79,39 +79,99 @@ def getYear(account):
     return yearUnique
 
 def getTransactionResults(account,category,year):    
-    if category=='All':
-        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
-    else:
-        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
-        
+    if account == 'All':
+        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
+    else:            
+        if category=='All':
+            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+        else:
+            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+            
     transactions = fetch_data(getTransactionQuery)    
+        
     return transactions    
     
-def drawLineGraph(transactions):
+def drawLineGraph(transactions,category,account,year):
     #Yearly Calculations
     months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] 
     
-    dataPoints = []
-    for i in xrange(12):
-        dataPoints.append(0)
-    
-    numberOfTransactions = np.shape(transactions)[0]
-    for transactionNumber in xrange(numberOfTransactions):
-#        print(transactionNumber)
-        monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
-        dataPoints[monthIndex] += float(transactions['Amount'][transactionNumber])    
-    dataPointsCummulativeSum = np.array(dataPoints).cumsum()
-
-    figure = go.Figure(
-        data=[
-            go.Scatter(x=months, y=dataPoints, mode='lines+markers',name='Raw'),
-            go.Scatter(x=months, y=dataPointsCummulativeSum, mode='lines+markers',name='Cummulative Sum')
-        ],
-        layout=go.Layout(
-            title='History Scatter Plot',
-            showlegend=True
+    if (account == 'All'):
+        #% if statement start--------------------------------------------------------------------------
+        #Get unique accounts
+        uniqueAccounts = transactions.Account.unique().astype(str)
+        
+        #Generate a list of data points for each of the unique accounts
+        dataPointsList = []
+              
+        for accountName in uniqueAccounts:
+            accountTransaction = getTransactionResults(accountName,category,year)
+            # Create empty array filled with zeroes for each of the months
+            dataPoints = []
+            for i in xrange(12):
+                dataPoints.append(0)
+            
+            #Create the unique monthly balances for each of the accounts
+            numberOfTransactions = np.shape(accountTransaction)[0]    
+            for transactionNumber in xrange(numberOfTransactions):        
+                monthIndex = int(str(accountTransaction['Date'][transactionNumber]).split('/')[0]) -1
+                dataPoints[monthIndex] = float(accountTransaction['Balance'][transactionNumber])
+            
+            dataPointsList.append(dataPoints)
+        
+        #Draw the scatter plot
+        figureList = []
+        
+        for accountIndex in xrange(len(uniqueAccounts)):  
+            figureList.append(go.Scatter(x=months, y=dataPointsList[accountIndex], mode='lines+markers',name=uniqueAccounts[accountIndex]))
+        
+        figure = go.Figure(
+            data=figureList,
+            layout=go.Layout(
+                title='History Scatter Plot',
+                showlegend=True
+            )
+        )   
+#        for accountIndex in xrange(len(uniqueAccounts)):  
+#            accountFigure = go.Figure(
+#                data=[                
+#                        go.Scatter(x=months, y=dataPointsList[accountIndex], mode='lines+markers',name=uniqueAccounts[accountIndex])
+#                ],
+#                layout=go.Layout(
+#                    title='History Scatter Plot',
+#                    showlegend=True
+#                )
+#            )
+#            figureList.append(accountFigure)
+#        
+#        figure = py.iplot(figureList)
+            
+        
+        #% if statement end----------------------------------------------------------------------------                        
+    else:       
+        #% else statement start------------------------------------------------------------------------                
+        # Create empty array filled with zeroes for each of the months
+        dataPoints = []
+        for i in xrange(12):
+            dataPoints.append(0)
+        
+        #Create the unique monthly balances
+        numberOfTransactions = np.shape(transactions)[0]    
+        for transactionNumber in xrange(numberOfTransactions):
+    #        print(transactionNumber)        
+            monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
+            dataPoints[monthIndex] = float(transactions['Balance'][transactionNumber])                
+        
+        #Draw the scatter plot
+        figure = go.Figure(
+            data=[
+                go.Scatter(x=months, y=dataPoints, mode='lines+markers',name='End Of Month Balance')
+            ],
+            layout=go.Layout(
+                title='History Scatter Plot',
+                showlegend=True
+            )
         )
-    )
+        #% else statement end-------------------------------------------------------------------------
 
     return figure
 
@@ -142,21 +202,7 @@ def drawPieGraph(transactions):
 #########################
 # Dashboard Layout / View
 #########################
-# Functions
-def generate_table(dataframe, max_rows=10):
-    '''Given dataframe, return template generated using Dash components
-    '''
-    
-    return html.Table(
-        # Header
-        [html.Tr([html.Th(col) for col in dataframe.columns])] +
-
-        # Body
-        [html.Tr([
-            html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-        ]) for i in range(min(len(dataframe), max_rows))]
-    )
-    
+## Functions
 def onLoad_GetData():
     '''Actions to perform upon initial page load'''
 
@@ -201,7 +247,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE V07 - Append Current CSV Files Into One',className="mdl-layout__header-row"),            
+            html.H1('TITLE V08 - Draw All Accounts',className="mdl-layout__header-row"),            
         ]),
             
     ],className="mdl-layout__header"),
@@ -261,6 +307,7 @@ app.layout = html.Div([
                      html.Div([
                         dt.DataTable(
                             # Initialise the rows
+                            columns=['Date','Account','Title','MainCategory','Amount','Balance'],
                             rows=[{}],                            
                             row_selectable=False,
                             filterable=True,
@@ -329,7 +376,7 @@ def populateCategories(account):
         for category in categories
     ]
 
-# Load Categories in Dropdown
+# Load Year in Dropdown
 @app.callback(
     Output(component_id='yearSelector', component_property='options'),
     [
@@ -343,7 +390,7 @@ def populateYear(account):
         for year in years
     ]
 
-# Load Categories in Dropdown
+# Load Month in Dropdown
 @app.callback(
     Output(component_id='monthSelector', component_property='options'),
     [
@@ -357,7 +404,7 @@ def populateMonth(account):
         for month in months
     ]
     
-# Load Categories in Dropdown
+# Load Day in Dropdown
 @app.callback(
     Output(component_id='daySelector', component_property='options'),
     [
@@ -387,7 +434,7 @@ def updateDrawLineGraph(account,category,year):
 
     figure = []
     if len(transactions) > 0:
-        figure = drawLineGraph(transactions)
+        figure = drawLineGraph(transactions,category,account,year)
 
     return figure
 
