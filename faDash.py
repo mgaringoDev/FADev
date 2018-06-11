@@ -1,5 +1,5 @@
 #%%
-# Initialize and draw all accounts on the line graph 
+# Separation of Debit and Credit or Expense and Income
 #%% 
 # standard library
 import os
@@ -80,12 +80,15 @@ def getYear(account):
 
 def getTransactionResults(account,category,year):    
     if account == 'All':
-        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
+#        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
+        getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
     else:            
         if category=='All':
-            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+#            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
         else:
-            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+#            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
             
     transactions = fetch_data(getTransactionQuery)    
         
@@ -102,21 +105,61 @@ def drawLineGraph(transactions,category,account,year):
         
         #Generate a list of data points for each of the unique accounts
         dataPointsList = []
-              
+        creditList = []
+        debitList = []
+        
+        #Obtain the current monthly balances for each of the unique accounts
         for accountName in uniqueAccounts:
             accountTransaction = getTransactionResults(accountName,category,year)
             # Create empty array filled with zeroes for each of the months
             dataPoints = []
+            creditPoint = []
+            debitPoints = []
+            
             for i in xrange(12):
                 dataPoints.append(0)
+                creditPoint.append(0)
+                debitPoints.append(0)
             
             #Create the unique monthly balances for each of the accounts
             numberOfTransactions = np.shape(accountTransaction)[0]    
             for transactionNumber in xrange(numberOfTransactions):        
                 monthIndex = int(str(accountTransaction['Date'][transactionNumber]).split('/')[0]) -1
                 dataPoints[monthIndex] = float(accountTransaction['Balance'][transactionNumber])
+                
+                if(accountTransaction['Subcategory'][transactionNumber]=="Debit"):
+                    debitPoints[monthIndex] += float(accountTransaction['Amount'][transactionNumber])
+                
+                if(accountTransaction['Subcategory'][transactionNumber]=="Credit"):
+                    creditPoint[monthIndex] += float(accountTransaction['Amount'][transactionNumber])
             
+            creditList.append(creditPoint)
+            debitList.append(debitPoints)
             dataPointsList.append(dataPoints)
+        
+        # Generate entire net worth
+        EntireBalance = []
+        EntireCredit = []
+        EntireDebit = []        
+        
+        for i in xrange(12):
+                EntireBalance.append(0)
+                EntireCredit.append(0)
+                EntireDebit.append(0)                
+                
+        for accountSummary in dataPointsList:
+            for monthIndex in xrange(len(accountSummary)):
+                EntireBalance[monthIndex] = EntireBalance[monthIndex] + accountSummary[monthIndex]
+        
+        # Generate the credit debit division
+        for accountSummary in creditList:
+            for monthIndex in xrange(len(accountSummary)):
+                EntireCredit[monthIndex] = EntireCredit[monthIndex] + accountSummary[monthIndex]
+        
+        for accountSummary in debitList:
+            for monthIndex in xrange(len(accountSummary)):
+                EntireDebit[monthIndex] = EntireDebit[monthIndex] + accountSummary[monthIndex]
+        
         
         #Draw the scatter plot
         figureList = []
@@ -124,28 +167,18 @@ def drawLineGraph(transactions,category,account,year):
         for accountIndex in xrange(len(uniqueAccounts)):  
             figureList.append(go.Scatter(x=months, y=dataPointsList[accountIndex], mode='lines+markers',name=uniqueAccounts[accountIndex]))
         
+        figureList.append(go.Scatter(x=months, y=EntireBalance, mode='lines+markers',name='Net Worth'))
+        figureList.append(go.Scatter(x=months, y=EntireCredit, mode='lines+markers',name='Expenses'))
+        figureList.append(go.Scatter(x=months, y=EntireDebit, mode='lines+markers',name='Income'))
+        
+        
         figure = go.Figure(
             data=figureList,
             layout=go.Layout(
                 title='History Scatter Plot',
                 showlegend=True
             )
-        )   
-#        for accountIndex in xrange(len(uniqueAccounts)):  
-#            accountFigure = go.Figure(
-#                data=[                
-#                        go.Scatter(x=months, y=dataPointsList[accountIndex], mode='lines+markers',name=uniqueAccounts[accountIndex])
-#                ],
-#                layout=go.Layout(
-#                    title='History Scatter Plot',
-#                    showlegend=True
-#                )
-#            )
-#            figureList.append(accountFigure)
-#        
-#        figure = py.iplot(figureList)
-            
-        
+        )           
         #% if statement end----------------------------------------------------------------------------                        
     else:       
         #% else statement start------------------------------------------------------------------------                
@@ -248,8 +281,7 @@ app.layout = html.Div([
     html.Header([
         html.Div([
             html.H1('TITLE V08 - Draw All Accounts',className="mdl-layout__header-row"),            
-        ]),
-            
+        ]),            
     ],className="mdl-layout__header"),
 
     # Page Main
@@ -264,13 +296,13 @@ app.layout = html.Div([
                         # Account Selection 
                         html.Div([
                             html.Div('Account Type', className='three columns'),
-                            html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),className='nine columns')),
+                            html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),
                         ],className='twelve columns'),                       
                         
                         #Category Selection
                         html.Div([
                             html.Div('Category Type', className='three columns'),
-                            html.Div(dcc.Dropdown(id='categorySelector',className='nine columns')),
+                            html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),
                         ],className='twelve columns'),                        
                     ],className='twelve columns'),
     
@@ -280,7 +312,7 @@ app.layout = html.Div([
                         # Year Selection 
                         html.Div([
                             html.Div('Year', className='three columns'),
-                            html.Div(dcc.Dropdown(id='yearSelector',className='nine columns')),
+                            html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),
                         ],className='twelve columns'),
     
                         # Year Selection 
