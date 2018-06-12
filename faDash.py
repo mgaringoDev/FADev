@@ -1,5 +1,5 @@
 #%%
-# Separation of Debit and Credit or Expense and Income with Running Monthly Savings
+# Monthly searches
 #%% 
 # standard library
 import os
@@ -76,34 +76,61 @@ def getYear(account):
     yearUnique = np.unique(yearList)
     return yearUnique
 
-
-def getTransactionResultsForSubcategory(account,category,year,subcategory):    
-    if account == 'All':
-        getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Subcategory=\'%s\'' % (year,subcategory)
-    else:            
-        if category=='All':
-            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND Subcategory=\'%s\'' % (year, account,subcategory)
-        else:
-            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\' AND Subcategory=\'%s\'' % (year, account,category,subcategory)
-            
+def getTransactionResultsForSubcategory(account,category,year,subcategory,month):        
+    if (month == '00'):
+        # if month statement start -------------------------------------------------------------------
+        if account == 'All':
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Subcategory=\'%s\'' % (year,subcategory)
+        else:            
+            if category=='All':
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND Subcategory=\'%s\'' % (year, account,subcategory)
+            else:
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\' AND Subcategory=\'%s\'' % (year, account,category,subcategory)
+        # if month statement end  -----------------------------------------------
+    else:
+         # else month statement start -------------------------------------------------------------------
+        if account == 'All':
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Subcategory=\'%s\' AND SUBSTR(Date,1,2)=\'%s\'' % (year,subcategory,month)
+        else:            
+            if category=='All':
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND Subcategory=\'%s\' AND SUBSTR(Date,1,2)=\'%s\'' % (year, account,subcategory,month)
+            else:
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\' AND Subcategory=\'%s\' AND SUBSTR(Date,1,2)=\'%s\'' % (year, account,category,subcategory,month)
+        # else month statement end  -----------------------------------------------        
+        
     transactions = fetch_data(getTransactionQuery)    
         
     return transactions   
  
-def getTransactionResults(account,category,year):    
-    if account == 'All':
-        getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
-    else:            
-        if category=='All':
-            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
-        else:
-            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+def getTransactionResults(account,category,year,month):  
+    if (month=='00'):
+        # if month statement start -------------------------------------------------------------------
+        if account == 'All':
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
+        else:            
+            if category=='All':
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
+            else:
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
+        # if month statement end -------------------------------------------------------------------        
+    else:
+        # else month statement start -------------------------------------------------------------------
+        if account == 'All':
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND AND SUBSTR(Date,1,2)=\'%s\'' % (year,month)
+        else:            
+            if category=='All':
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND SUBSTR(Date,1,2)=\'%s\' ' % (year, account,month)
+            else:
+                getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\' AND SUBSTR(Date,1,2)=\'%s\'' % (year, account,category,month)
+        # else month statement end -------------------------------------------------------------------
+        
+    
             
     transactions = fetch_data(getTransactionQuery)    
         
     return transactions    
     
-def drawLineGraph(transactions,category,account,year):
+def drawLineGraph(transactions,category,account,year,month):    
     #Yearly Calculations
     months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] 
     
@@ -119,7 +146,7 @@ def drawLineGraph(transactions,category,account,year):
         
         #Obtain the current monthly balances for each of the unique accounts
         for accountName in uniqueAccounts:
-            accountTransaction = getTransactionResults(accountName,category,year)
+            accountTransaction = getTransactionResults(accountName,category,year,month)
             # Create empty array filled with zeroes for each of the months
             dataPoints = []
             creditPoint = []
@@ -230,12 +257,10 @@ def drawPieGraphExpenses(transactions):
     categorySum = transactions.groupby(['MainCategory']).sum()
     categorySumList = np.abs(categorySum['Amount'])
     categorySumList = categorySumList.tolist()
-    print(categorySumList)
-    
+        
     categoryList = np.unique(transactions['MainCategory'].astype(str))
     categoryList = categoryList.tolist()    
-    print(categoryList)    
-    
+        
     #-------------------------------------------------------------------------
 #    http://pycopy.com/plotly-a-pack-of-donuts/
 #    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
@@ -252,18 +277,88 @@ def drawPieGraphExpenses(transactions):
 
     return figure
 
+def drawLineGraphByCategory(transactions,category,account,year,month):   
+    #Yearly Calculations
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] 
+    
+    if (account == 'All'):
+        #% if statement start--------------------------------------------------------------------------
+        #Get unique accounts
+        uniqueCategory= transactions.MainCategory.unique().astype(str)
+        
+        #Generate a list of data points for each of the unique accounts
+        dataPointsList = []        
+        
+        #Obtain the current monthly balances for each of the unique accounts
+        for categoryName in uniqueCategory:                             
+            # Create empty array filled with zeroes for each of the months
+            dataPoints = []            
+            
+            for i in xrange(12):
+                dataPoints.append(0)                
+            
+            #Create the unique monthly balances for each of the accounts
+            numberOfTransactions = np.shape(transactions)[0]    
+            for transactionNumber in xrange(numberOfTransactions):
+                if(transactions['MainCategory'][transactionNumber]==categoryName):
+                    monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
+                    dataPoints[monthIndex] += float(transactions['Amount'][transactionNumber])                                
+                
+            dataPointsList.append(dataPoints)
+        
+             
+        #Draw the scatter plot
+        figureList = []
+        
+        for categoryIndex in xrange(len(uniqueCategory)):  
+            figureList.append(go.Scatter(x=months, y=dataPointsList[categoryIndex], mode='lines+markers',name=uniqueCategory[categoryIndex]))
+            
+        figure = go.Figure(
+            data=figureList,
+            layout=go.Layout(
+                title='History Scatter Plot',
+                showlegend=True
+            )
+        )           
+        #% if statement end----------------------------------------------------------------------------                        
+    else:       
+        #% else statement start------------------------------------------------------------------------                
+        # Create empty array filled with zeroes for each of the months
+        dataPoints = []
+        for i in xrange(12):
+            dataPoints.append(0)
+        
+        #Create the unique monthly balances
+        numberOfTransactions = np.shape(transactions)[0]    
+        for transactionNumber in xrange(numberOfTransactions):
+    #        print(transactionNumber)        
+            monthIndex = int(str(transactions['Date'][transactionNumber]).split('/')[0]) -1
+            dataPoints[monthIndex] = float(transactions['Balance'][transactionNumber])                
+        
+        #Draw the scatter plot
+        figure = go.Figure(
+            data=[
+                go.Scatter(x=months, y=dataPoints, mode='lines+markers',name='End Of Month Balance')
+            ],
+            layout=go.Layout(
+                title='History Scatter Plot',
+                showlegend=True
+            )
+        )
+        #% else statement end-------------------------------------------------------------------------
+
+    return figure 
+    
 def drawPieGraphIncome(transactions):
     
     transactions['Amount'] = transactions['Amount'].apply(pd.to_numeric)
     categorySum = transactions.groupby(['MainCategory']).sum()
     categorySumList = np.abs(categorySum['Amount'])
     categorySumList = categorySumList.tolist()
-    print(categorySumList)
-    
+        
     categoryList = np.unique(transactions['MainCategory'].astype(str))
     categoryList = categoryList.tolist()    
-    print(categoryList)
-    
+        
     
     #-------------------------------------------------------------------------
 #    http://pycopy.com/plotly-a-pack-of-donuts/
@@ -330,7 +425,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE V11 - Pie Chart D/C Split',className="mdl-layout__header-row"),            
+            html.H1('TITLE V12 - Monthly searches',className="mdl-layout__header-row"),            
         ]),            
     ],className="mdl-layout__header"),
 
@@ -368,18 +463,22 @@ app.layout = html.Div([
                         # Year Selection 
                         html.Div([
                             html.Div('Month', className='three columns'),
-                            html.Div(dcc.Dropdown(id='monthSelector',className='nine columns')),
-                        ],className='twelve columns'),
+                            html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
+                        ],className='twelve columns'),                       
     
-                        # Year Selection 
-                        html.Div([
-                            html.Div('Day', className='three columns'),
-                            html.Div(dcc.Dropdown(id='daySelector',className='nine columns')),
-                        ],className='twelve columns'),
                         
-                                               
-                                               
-                    ],className='twelve columns'),               
+                    ],className='twelve columns'),
+
+                    html.Div(['---------------------------------------------------------------']),               
+                    
+                    html.Div([
+                        # Graphing State Selection 
+                        html.Div([
+                            html.Div('Graph', className='three columns'),
+                            html.Div(dcc.Dropdown(id='stateSelector',value='All',className='nine columns')),
+                        ],className='twelve columns'),
+                    ],className='twelve columns'),                    
+                    
                 ],className="mdl-cell mdl-cell--2-col"),
 
 
@@ -408,6 +507,7 @@ app.layout = html.Div([
                     # Top Row Plots
                     html.Div([
                         #Scatter Plot
+#                        html.Button('Refresh', id='buttonRefresh'),
                         dcc.Graph(id='lineGraph')
                     ]),   
                     
@@ -415,10 +515,12 @@ app.layout = html.Div([
 #                    https://community.plot.ly/t/two-graphs-side-by-side/5312
                     html.Div([
                         html.Div([
+#                            html.Button('Plot Expenses', id='buttonExpense'),
                             dcc.Graph(id='categoryGraphExpenses')
                         ], className="six columns"),
                 
                         html.Div([
+#                            html.Button('Plot Income', id='buttonIncome'),
                             dcc.Graph(id='categoryGraphIncome')
                         ], className="six columns"),
                     ], className="row")
@@ -440,14 +542,15 @@ app.layout = html.Div([
     [
          Input(component_id='accountSelector', component_property='value'),
          Input(component_id='categorySelector', component_property='value'),
-         Input(component_id='yearSelector', component_property='value')
+         Input(component_id='yearSelector', component_property='value'),
+         Input(component_id='monthSelector', component_property='value')
     ]
 )
-def update_table(account,category,year):
+def update_table(account,category,year,month):
     """
     For user selections, return the relevant table
     """
-    transactions = getTransactionResults(account,category,year)
+    transactions = getTransactionResults(account,category,year,month)
     return transactions.to_dict('records')
 
 # Load Categories in Dropdown
@@ -486,43 +589,57 @@ def populateYear(account):
     ]
 )
 def populateMonth(account):
-    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    months = ['All','JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    value = ['00','01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
     return [
-        {'label': month, 'value': month}
-        for month in months
+        {'label': months[month], 'value': value[month]}
+        for month in xrange(len(months))
     ]
-    
-# Load Day in Dropdown
+
+# Load Month in Dropdown
 @app.callback(
-    Output(component_id='daySelector', component_property='options'),
+    Output(component_id='stateSelector', component_property='options'),
     [
         Input(component_id='accountSelector', component_property='value')
     ]
 )
-def populateDay(account):
-    dayCount = range(32)
-    dayCount.pop(0)
-    days = list(dayCount)
+def populateState(account):
+    months = ['All','Expenses', 'Income']    
     return [
-        {'label': day, 'value': day}
-        for day in days
+        {'label': month, 'value': month}
+        for month in months
     ]
-
 # Update line Graph
 @app.callback(
     Output(component_id='lineGraph', component_property='figure'),
     [
         Input(component_id='accountSelector', component_property='value'),
         Input(component_id='categorySelector', component_property='value'),
-        Input(component_id='yearSelector', component_property='value')
+        Input(component_id='yearSelector', component_property='value'),
+        Input(component_id='monthSelector', component_property='value'),
+        Input(component_id='stateSelector', component_property='value')
+                
     ]
 )
-def updateDrawLineGraph(account,category,year):
-    transactions = getTransactionResults(account,category,year)
-
-    figure = []
-    if len(transactions) > 0:
-        figure = drawLineGraph(transactions,category,account,year)
+def updateDrawLineGraph(account,category,year,month,state):        
+    if(state=='All'):        
+        transactions = getTransactionResults(account,category,year,month)
+    
+        figure = []
+        if len(transactions) > 0:
+            figure = drawLineGraph(transactions,category,account,year,month)
+    elif(state=='Expenses'):
+        transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
+        
+        figure = []
+        if len(transactions) > 0:
+            figure = drawLineGraphByCategory(transactions,category,account,year,month)
+    elif(state=='Income'):
+        transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
+        
+        figure = []
+        if len(transactions) > 0:
+            figure = drawLineGraphByCategory(transactions,category,account,year,month)
 
     return figure
 
@@ -532,11 +649,12 @@ def updateDrawLineGraph(account,category,year):
     [
         Input(component_id='accountSelector', component_property='value'),
         Input(component_id='categorySelector', component_property='value'),
-        Input(component_id='yearSelector', component_property='value')
+        Input(component_id='yearSelector', component_property='value'),
+        Input(component_id='monthSelector', component_property='value')
     ]
 )
-def updateDrawPieGraphExpenses(account,category,year):
-    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit')
+def updateDrawPieGraphExpenses(account,category,year,month):
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
 
     figure = []
     if len(transactions) > 0:
@@ -550,11 +668,12 @@ def updateDrawPieGraphExpenses(account,category,year):
     [
         Input(component_id='accountSelector', component_property='value'),
         Input(component_id='categorySelector', component_property='value'),
-        Input(component_id='yearSelector', component_property='value')
+        Input(component_id='yearSelector', component_property='value'),
+        Input(component_id='monthSelector', component_property='value')        
     ]
 )
-def updateDrawPieGraphIncome(account,category,year):
-    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit')
+def updateDrawPieGraphIncome(account,category,year,month):
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
 
     figure = []
     if len(transactions) > 0:
