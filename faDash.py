@@ -1,5 +1,5 @@
 #%%
-# Separation of Debit and Credit or Expense and Income
+# Separation of Debit and Credit or Expense and Income with Running Monthly Savings
 #%% 
 # standard library
 import os
@@ -71,23 +71,32 @@ def getCategories(account):
 def getYear(account):
     '''Returns the list of categories that are stored in the database'''
     
-#    getYearQuery = 'SELECT DISTINCT Date FROM myData WHERE Account=\'%s\'' % account        
-#    getYearQuery = 'SELECT Date FROM myData WHERE CAST(SUBSTR(Date,7,4) as integer)=2014'
     getYearQuery = 'SELECT SUBSTR(Date,7,4) FROM myData'
     yearList = fetch_data(getYearQuery)   
     yearUnique = np.unique(yearList)
     return yearUnique
 
+
+def getTransactionResultsForSubcategory(account,category,year,subcategory):    
+    if account == 'All':
+        getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Subcategory=\'%s\'' % (year,subcategory)
+    else:            
+        if category=='All':
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND Subcategory=\'%s\'' % (year, account,subcategory)
+        else:
+            getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\' AND Subcategory=\'%s\'' % (year, account,category,subcategory)
+            
+    transactions = fetch_data(getTransactionQuery)    
+        
+    return transactions   
+ 
 def getTransactionResults(account,category,year):    
     if account == 'All':
-#        getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
         getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\'' % (year)
     else:            
         if category=='All':
-#            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
             getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\'' % (year, account)
         else:
-#            getTransactionQuery = 'SELECT Date,Title,MainCategory,Account,Amount,Balance FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
             getTransactionQuery = 'SELECT * FROM myData WHERE SUBSTR(Date,7,4)=\'%s\' AND Account=\'%s\' AND MainCategory=\'%s\'' % (year, account,category)
             
     transactions = fetch_data(getTransactionQuery)    
@@ -140,12 +149,14 @@ def drawLineGraph(transactions,category,account,year):
         # Generate entire net worth
         EntireBalance = []
         EntireCredit = []
-        EntireDebit = []        
+        EntireDebit = [] 
+        MonthlySavings = []
         
+        #Initialize these arrays to 0
         for i in xrange(12):
                 EntireBalance.append(0)
                 EntireCredit.append(0)
-                EntireDebit.append(0)                
+                EntireDebit.append(0)                  
                 
         for accountSummary in dataPointsList:
             for monthIndex in xrange(len(accountSummary)):
@@ -154,11 +165,15 @@ def drawLineGraph(transactions,category,account,year):
         # Generate the credit debit division
         for accountSummary in creditList:
             for monthIndex in xrange(len(accountSummary)):
-                EntireCredit[monthIndex] = EntireCredit[monthIndex] + accountSummary[monthIndex]
+                EntireCredit[monthIndex] = EntireCredit[monthIndex] + accountSummary[monthIndex]                
         
         for accountSummary in debitList:
             for monthIndex in xrange(len(accountSummary)):
-                EntireDebit[monthIndex] = EntireDebit[monthIndex] + accountSummary[monthIndex]
+                EntireDebit[monthIndex] = EntireDebit[monthIndex] + accountSummary[monthIndex]                
+        
+        for i in xrange(12):
+            MonthlySavings.append(EntireDebit[i] + EntireCredit[i])
+            
         
         
         #Draw the scatter plot
@@ -170,6 +185,7 @@ def drawLineGraph(transactions,category,account,year):
         figureList.append(go.Scatter(x=months, y=EntireBalance, mode='lines+markers',name='Net Worth'))
         figureList.append(go.Scatter(x=months, y=EntireCredit, mode='lines+markers',name='Expenses'))
         figureList.append(go.Scatter(x=months, y=EntireDebit, mode='lines+markers',name='Income'))
+        figureList.append(go.Scatter(x=months, y=MonthlySavings, mode='lines+markers',name='Monthly Savings'))
         
         
         figure = go.Figure(
@@ -218,39 +234,11 @@ def drawPieGraphExpenses(transactions):
     
     categoryList = np.unique(transactions['MainCategory'].astype(str))
     categoryList = categoryList.tolist()    
-    print(categoryList)
-    
+    print(categoryList)    
     
     #-------------------------------------------------------------------------
 #    http://pycopy.com/plotly-a-pack-of-donuts/
 #    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
-#    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
-#    values = [4500,2500,1053,500]
-#    
-#    numFig = 2;
-#    dom_x = float(0)
-#    tmp = float(numFig)
-#    dom_dx = round(float(1/tmp),2)
-#    
-#    traces =[]
-#    annotation = []
-#    
-#    for fig in xrange(numFig):
-#        trace = go.Pie(labels=labels, values=values)
-#        traces.append(trace)
-#        anno = dict(showarrow=False, x=dom_x + (dom_dx/2), y=0.5, xanchor="center")
-#        annotation.append(anno)
-#        dom_x = dom_x + dom_dx
-#     
-#    layout = go.Layout(annotations=annotation)
-        
-        
-#    figData = []
-#    figData.append()
-#    figData.append(go.Pie(labels=categoryList, values=categorySumList))
-#    figData.append(go.Pie(labels=labels, values=values))
-    
-#    anno = dict(title='History Scatter Plot',showlegend=True,autosize = False,)
     #-------------------------------------------------------------------------
     figure = go.Figure(
         data=[
@@ -280,33 +268,7 @@ def drawPieGraphIncome(transactions):
     #-------------------------------------------------------------------------
 #    http://pycopy.com/plotly-a-pack-of-donuts/
 #    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
-#    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
-#    values = [4500,2500,1053,500]
-#    
-#    numFig = 2;
-#    dom_x = float(0)
-#    tmp = float(numFig)
-#    dom_dx = round(float(1/tmp),2)
-#    
-#    traces =[]
-#    annotation = []
-#    
-#    for fig in xrange(numFig):
-#        trace = go.Pie(labels=labels, values=values)
-#        traces.append(trace)
-#        anno = dict(showarrow=False, x=dom_x + (dom_dx/2), y=0.5, xanchor="center")
-#        annotation.append(anno)
-#        dom_x = dom_x + dom_dx
-#     
-#    layout = go.Layout(annotations=annotation)
-        
-        
-#    figData = []
-#    figData.append()
-#    figData.append(go.Pie(labels=categoryList, values=categorySumList))
-#    figData.append(go.Pie(labels=labels, values=values))
-    
-#    anno = dict(title='History Scatter Plot',showlegend=True,autosize = False,)
+
     #-------------------------------------------------------------------------
     figure = go.Figure(
         data=[
@@ -368,7 +330,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE V10 - Pie Chart D/C Split',className="mdl-layout__header-row"),            
+            html.H1('TITLE V11 - Pie Chart D/C Split',className="mdl-layout__header-row"),            
         ]),            
     ],className="mdl-layout__header"),
 
@@ -451,26 +413,12 @@ app.layout = html.Div([
                     
                     # Bottom Row Plots
 #                    https://community.plot.ly/t/two-graphs-side-by-side/5312
-#                    html.Div([
-#                        html.Div([
-#                            #Pie
-#                            dcc.Graph(id='categoryGraph')
-#                        ]),
-#                        html.Div([
-#                            #Pie
-#                            dcc.Graph(id='categoryGraph')
-#                        ]),
-#                    ]), 
                     html.Div([
                         html.Div([
-#                            html.H3('Column 1'),
-#                            dcc.Graph(id='g1', figure={'data': [{'y': [1, 2, 3]}]})
-                                dcc.Graph(id='categoryGraphExpenses')
+                            dcc.Graph(id='categoryGraphExpenses')
                         ], className="six columns"),
                 
                         html.Div([
-#                            html.H3('Column 2'),
-#                            dcc.Graph(id='g2', figure={'data': [{'y': [1, 2, 3]}]})
                             dcc.Graph(id='categoryGraphIncome')
                         ], className="six columns"),
                     ], className="row")
@@ -588,7 +536,7 @@ def updateDrawLineGraph(account,category,year):
     ]
 )
 def updateDrawPieGraphExpenses(account,category,year):
-    transactions = getTransactionResults(account,category,year)
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit')
 
     figure = []
     if len(transactions) > 0:
@@ -606,7 +554,7 @@ def updateDrawPieGraphExpenses(account,category,year):
     ]
 )
 def updateDrawPieGraphIncome(account,category,year):
-    transactions = getTransactionResults(account,category,year)
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit')
 
     figure = []
     if len(transactions) > 0:
