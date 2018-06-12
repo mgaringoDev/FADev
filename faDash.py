@@ -208,7 +208,7 @@ def drawLineGraph(transactions,category,account,year):
 
     return figure
 
-def drawPieGraph(transactions):
+def drawPieGraphExpenses(transactions):
     
     transactions['Amount'] = transactions['Amount'].apply(pd.to_numeric)
     categorySum = transactions.groupby(['MainCategory']).sum()
@@ -220,12 +220,100 @@ def drawPieGraph(transactions):
     categoryList = categoryList.tolist()    
     print(categoryList)
     
+    
+    #-------------------------------------------------------------------------
+#    http://pycopy.com/plotly-a-pack-of-donuts/
+#    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
+#    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
+#    values = [4500,2500,1053,500]
+#    
+#    numFig = 2;
+#    dom_x = float(0)
+#    tmp = float(numFig)
+#    dom_dx = round(float(1/tmp),2)
+#    
+#    traces =[]
+#    annotation = []
+#    
+#    for fig in xrange(numFig):
+#        trace = go.Pie(labels=labels, values=values)
+#        traces.append(trace)
+#        anno = dict(showarrow=False, x=dom_x + (dom_dx/2), y=0.5, xanchor="center")
+#        annotation.append(anno)
+#        dom_x = dom_x + dom_dx
+#     
+#    layout = go.Layout(annotations=annotation)
+        
+        
+#    figData = []
+#    figData.append()
+#    figData.append(go.Pie(labels=categoryList, values=categorySumList))
+#    figData.append(go.Pie(labels=labels, values=values))
+    
+#    anno = dict(title='History Scatter Plot',showlegend=True,autosize = False,)
+    #-------------------------------------------------------------------------
     figure = go.Figure(
         data=[
-             go.Pie(labels=categoryList, values=categorySumList)            
+             go.Pie(labels=categoryList, values=categorySumList)           
         ],
         layout=go.Layout(
-            title='History Scatter Plot',
+            title='Expense Categories',
+            showlegend=True
+        )
+    )
+
+    return figure
+
+def drawPieGraphIncome(transactions):
+    
+    transactions['Amount'] = transactions['Amount'].apply(pd.to_numeric)
+    categorySum = transactions.groupby(['MainCategory']).sum()
+    categorySumList = np.abs(categorySum['Amount'])
+    categorySumList = categorySumList.tolist()
+    print(categorySumList)
+    
+    categoryList = np.unique(transactions['MainCategory'].astype(str))
+    categoryList = categoryList.tolist()    
+    print(categoryList)
+    
+    
+    #-------------------------------------------------------------------------
+#    http://pycopy.com/plotly-a-pack-of-donuts/
+#    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
+#    labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
+#    values = [4500,2500,1053,500]
+#    
+#    numFig = 2;
+#    dom_x = float(0)
+#    tmp = float(numFig)
+#    dom_dx = round(float(1/tmp),2)
+#    
+#    traces =[]
+#    annotation = []
+#    
+#    for fig in xrange(numFig):
+#        trace = go.Pie(labels=labels, values=values)
+#        traces.append(trace)
+#        anno = dict(showarrow=False, x=dom_x + (dom_dx/2), y=0.5, xanchor="center")
+#        annotation.append(anno)
+#        dom_x = dom_x + dom_dx
+#     
+#    layout = go.Layout(annotations=annotation)
+        
+        
+#    figData = []
+#    figData.append()
+#    figData.append(go.Pie(labels=categoryList, values=categorySumList))
+#    figData.append(go.Pie(labels=labels, values=values))
+    
+#    anno = dict(title='History Scatter Plot',showlegend=True,autosize = False,)
+    #-------------------------------------------------------------------------
+    figure = go.Figure(
+        data=[
+             go.Pie(labels=categoryList, values=categorySumList)           
+        ],
+        layout=go.Layout(
+            title='Income Categories',
             showlegend=True
         )
     )
@@ -280,7 +368,7 @@ app.layout = html.Div([
     # Page Header
     html.Header([
         html.Div([
-            html.H1('TITLE V08 - Draw All Accounts',className="mdl-layout__header-row"),            
+            html.H1('TITLE V10 - Pie Chart D/C Split',className="mdl-layout__header-row"),            
         ]),            
     ],className="mdl-layout__header"),
 
@@ -362,10 +450,30 @@ app.layout = html.Div([
                     ]),   
                     
                     # Bottom Row Plots
+#                    https://community.plot.ly/t/two-graphs-side-by-side/5312
+#                    html.Div([
+#                        html.Div([
+#                            #Pie
+#                            dcc.Graph(id='categoryGraph')
+#                        ]),
+#                        html.Div([
+#                            #Pie
+#                            dcc.Graph(id='categoryGraph')
+#                        ]),
+#                    ]), 
                     html.Div([
-                        #Pie
-                        dcc.Graph(id='categoryGraph')
-                    ]),   
+                        html.Div([
+#                            html.H3('Column 1'),
+#                            dcc.Graph(id='g1', figure={'data': [{'y': [1, 2, 3]}]})
+                                dcc.Graph(id='categoryGraphExpenses')
+                        ], className="six columns"),
+                
+                        html.Div([
+#                            html.H3('Column 2'),
+#                            dcc.Graph(id='g2', figure={'data': [{'y': [1, 2, 3]}]})
+                            dcc.Graph(id='categoryGraphIncome')
+                        ], className="six columns"),
+                    ], className="row")
                 ],className="mdl-cell mdl-cell--6-col"),
             
             ],className="mdl-grid"),
@@ -470,21 +578,39 @@ def updateDrawLineGraph(account,category,year):
 
     return figure
 
-# Update category Graph
+# Update Category Graph Expenses
 @app.callback(
-    Output(component_id='categoryGraph', component_property='figure'),
+    Output(component_id='categoryGraphExpenses', component_property='figure'),
     [
         Input(component_id='accountSelector', component_property='value'),
         Input(component_id='categorySelector', component_property='value'),
         Input(component_id='yearSelector', component_property='value')
     ]
 )
-def updateDrawPieGraph(account,category,year):
+def updateDrawPieGraphExpenses(account,category,year):
     transactions = getTransactionResults(account,category,year)
 
     figure = []
     if len(transactions) > 0:
-        figure = drawPieGraph(transactions)
+        figure = drawPieGraphExpenses(transactions)
+
+    return figure
+
+# Update Category Graph Income
+@app.callback(
+    Output(component_id='categoryGraphIncome', component_property='figure'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value')
+    ]
+)
+def updateDrawPieGraphIncome(account,category,year):
+    transactions = getTransactionResults(account,category,year)
+
+    figure = []
+    if len(transactions) > 0:
+        figure = drawPieGraphIncome(transactions)
 
     return figure
 
