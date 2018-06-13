@@ -301,7 +301,7 @@ def drawPieGraphExpenses(transactions):
     #-------------------------------------------------------------------------
     figure = go.Figure(
         data=[
-             go.Pie(labels=categoryList, values=categorySumList)           
+             go.Pie(labels=categoryList, values=categorySumList,textposition="inside")           
         ],
         layout=go.Layout(
             title='Expenses',
@@ -401,7 +401,7 @@ def drawPieGraphIncome(transactions):
     #-------------------------------------------------------------------------
     figure = go.Figure(
         data=[
-             go.Pie(labels=categoryList, values=categorySumList)           
+             go.Pie(labels=categoryList, values=categorySumList,textposition="inside")           
         ],
         layout=go.Layout(
             title='Income',
@@ -456,6 +456,7 @@ app.scripts.append_script({
     "external_url": my_js_url
 })
 
+divPadding = '15px'
 # NOTE: The layout design for dash can be found here:
 #    https://codepen.io/chriddyp/pen/bWLwgP
 app.layout = html.Div([
@@ -589,7 +590,7 @@ app.layout = html.Div([
                                         ]),
                                         # ------------------------------------------------------------------------------                                                
                                     # table end
-                                    ], className="seven columns"),
+                                    ], className="seven columns",style={'padding': divPadding}),
                                     
                                     # Graph start
                                     html.Div([
@@ -602,7 +603,7 @@ app.layout = html.Div([
                                             ]),  
                                         # ------------------------------------------------------------------------------                                                
                                     # Graph end
-                                    ], className="five columns"),
+                                    ], className="five columns",style={'padding': divPadding}),
                             # top row end        
                             ], className="twelve columns"),
                             
@@ -614,33 +615,33 @@ app.layout = html.Div([
                                     html.Div([
             #                            html.Button('Plot Expenses', id='buttonExpense'),
                                         dcc.Graph(id='categoryGraphExpenses')
-                                    ], className="six columns"),
+                                    ], className="six columns",style={'padding': divPadding}),
                             
                                     html.Div([
 #                                        html.H1('Table')
             #                            html.Button('Plot Income', id='buttonIncome'),            
                                         dcc.Graph(id='categoryBarGraphExpenses')
                                     ], className="six columns"),
-                                ], className="six columns"),
+                                ], className="six columns",style={'padding': divPadding}),
                                 
                                 html.Div([
                                     html.Div([
             #                            html.Button('Plot Expenses', id='buttonExpense'),
                                         dcc.Graph(id='categoryGraphIncome')
-                                    ], className="six columns"),
+                                    ], className="six columns",style={'padding': divPadding}),
                             
                                     html.Div([
             #                            html.Button('Plot Income', id='buttonIncome'),
 #                                        html.H1('Table')
                                         dcc.Graph(id='categoryBarGraphIncome')
-                                    ], className="six columns"),
+                                    ], className="six columns",style={'padding': divPadding}),
                                 ], className="six columns")                                    
                             # bottom row end        
                             ], className="twelve columns")
                     # Partision of page end
                     ],className="mdl-grid"),
                 # Page content end
-                ],className='page-content')        
+                ],className='page-content',style={'background-color': 'black'})        
         # Page Main End
         ],className='mdl-layout__content')
         
