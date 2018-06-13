@@ -1,5 +1,5 @@
 #%%
-# Monthly searches
+# Layout changes
 #%% 
 # standard library
 import os
@@ -445,6 +445,10 @@ app.css.append_css({
     "external_url": "myCSS.css"
 })
 
+#app.css.append_css({
+#    "external_url": "myModifiedCSS.css"
+#})
+
 
         
 my_js_url = 'https://code.getmdl.io/1.3.0/material.min.js'
@@ -458,12 +462,34 @@ app.layout = html.Div([
     # Links
 #    html.Link(href='myCSS.css', rel='stylesheet'),
     
-        # Page Header
-        html.Header([
-            html.Div([
-                html.H1('TITLE V13 - Change Layout',className="mdl-layout__header-row"),            
-            ]),            
-        ],className="mdl-layout__header"),
+#        # Page Header
+#        html.Header([
+#            html.Div([
+#                html.Div([                                
+#                        html.H6('TITLE V14 '),            
+#                ],className ='two columns'),
+##                html.Div([
+##                    html.Div([
+##                        html.Div('Account Type', className='three columns'),
+##                        html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),                                                        
+##                    ],className ='three columns'),            
+##                    html.Div([  
+##                        html.Div('Category Type', className='three columns'),
+##                        html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),                              
+##                        
+##                    ],className ='three columns'),            
+##                    html.Div([  
+##                        html.Div('Year', className='three columns'),
+##                        html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),                              
+##                        
+##                    ],className ='three columns'),            
+##                    html.Div([                                
+##                        html.Div('Month', className='three columns'),
+##                        html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
+##                    ],className ='three columns'),                                                        
+##                ],className ='eight columns'),            
+#            ],className ='twelve columns'),            
+#        ],className="mdl-layout__header"),
     
         # Page Main Start
         html.Main([
@@ -471,53 +497,78 @@ app.layout = html.Div([
                 html.Div([
                     # Partision of page start
                     html.Div([
+                            # Search row start
+                            html.Div([                               
+                                html.Div([
+                                    html.Div([
+                                        html.Div('Account Type', className='three columns'),
+                                        html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),                                                        
+                                    ],className ='three columns'),            
+                                    html.Div([  
+                                        html.Div('Category Type', className='three columns'),
+                                        html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),                              
+                                        
+                                    ],className ='three columns'),            
+                                    html.Div([  
+                                        html.Div('Year', className='three columns'),
+                                        html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),                              
+                                        
+                                    ],className ='three columns'),            
+                                    html.Div([                                
+                                        html.Div('Month', className='three columns'),
+                                        html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
+                                    ],className ='three columns'),                                                        
+                                ],className ='twelve columns'),            
+                            # Search row end
+                            ],className ='twelve columns'),                            
+                            
                             # Top row start
                             html.Div([
-                                    # Selection start
-                                    html.Div([
-                                            html.Div([
-                                                # Account Selection 
-                                                html.Div([
-                                                    html.Div('Account Type', className='three columns'),
-                                                    html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),
-                                                ],className='twelve columns'),                       
-                                                
-                                                #Category Selection
-                                                html.Div([
-                                                    html.Div('Category Type', className='three columns'),
-                                                    html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),
-                                                ],className='twelve columns'),                        
-                                            ],className='twelve columns'),
-                            
-                                            html.Div(['----------------------------------------------------']),
-                        
-                                            html.Div([
-                                                # Year Selection 
-                                                html.Div([
-                                                    html.Div('Year', className='three columns'),
-                                                    html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),
-                                                ],className='twelve columns'),
-                            
-                                                # Year Selection 
-                                                html.Div([
-                                                    html.Div('Month', className='three columns'),
-                                                    html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
-                                                ],className='twelve columns'),                       
-                            
-                                                
-                                            ],className='twelve columns'),
-                        
-                                            html.Div(['----------------------------------------------------']),               
-                                            
-                                            html.Div([
-                                                # Graphing State Selection 
-                                                html.Div([
-                                                    html.Div('Graph', className='three columns'),
-                                                    html.Div(dcc.Dropdown(id='stateSelector',value='All',className='nine columns')),
-                                                ],className='twelve columns'),
-                                            ],className='twelve columns'),                                    
-                                    # Selection end
-                                    ], className="two columns"),
+#                                    # Selection start
+#                                    html.Div([
+##                                            html.Div([
+##                                                # Account Selection 
+##                                                html.Div([
+##                                                    html.Div('Account Type', className='three columns'),
+##                                                    html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),
+##                                                ],className='twelve columns'),                       
+##                                                
+##                                                #Category Selection
+##                                                html.Div([
+##                                                    html.Div('Category Type', className='three columns'),
+##                                                    html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),
+##                                                ],className='twelve columns'),                        
+##                                            ],className='twelve columns'),
+##                            
+##                                            html.Div(['----------------------------------------------------']),
+##                        
+##                                            html.Div([
+##                                                # Year Selection 
+##                                                html.Div([
+##                                                    html.Div('Year', className='three columns'),
+##                                                    html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),
+##                                                ],className='twelve columns'),
+##                            
+##                                                # Year Selection 
+##                                                html.Div([
+##                                                    html.Div('Month', className='three columns'),
+##                                                    html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
+##                                                ],className='twelve columns'),                       
+##                            
+##                                                
+##                                            ],className='twelve columns'),
+##                        
+##                                            html.Div(['----------------------------------------------------']),               
+##                                            
+##                                            html.Div([
+##                                                # Graphing State Selection 
+##                                                html.Div([
+##                                                    html.Div('Graph', className='three columns'),
+##                                                    html.Div(dcc.Dropdown(id='stateSelector',value='All',className='nine columns')),
+##                                                ],className='twelve columns'),
+##                                            ],className='twelve columns'),                                    
+##                                    # Selection end
+#                                    ], className="two columns"),
                                     
                                     # table start
                                     html.Div([
@@ -538,7 +589,7 @@ app.layout = html.Div([
                                         ]),
                                         # ------------------------------------------------------------------------------                                                
                                     # table end
-                                    ], className="six columns"),
+                                    ], className="seven columns"),
                                     
                                     # Graph start
                                     html.Div([
@@ -551,7 +602,7 @@ app.layout = html.Div([
                                             ]),  
                                         # ------------------------------------------------------------------------------                                                
                                     # Graph end
-                                    ], className="four columns"),
+                                    ], className="five columns"),
                             # top row end        
                             ], className="twelve columns"),
                             
@@ -658,19 +709,19 @@ def populateMonth(account):
         for month in xrange(len(months))
     ]
 
-# Load Month in Dropdown
-@app.callback(
-    Output(component_id='stateSelector', component_property='options'),
-    [
-        Input(component_id='accountSelector', component_property='value')
-    ]
-)
-def populateState(account):
-    months = ['All','Expenses', 'Income']    
-    return [
-        {'label': month, 'value': month}
-        for month in months
-    ]
+## Load Month in Dropdown
+#@app.callback(
+#    Output(component_id='stateSelector', component_property='options'),
+#    [
+#        Input(component_id='accountSelector', component_property='value')
+#    ]
+#)
+#def populateState(account):
+#    months = ['All','Expenses', 'Income']    
+#    return [
+#        {'label': month, 'value': month}
+#        for month in months
+#    ]
 # Update line Graph
 @app.callback(
     Output(component_id='lineGraph', component_property='figure'),
@@ -678,30 +729,30 @@ def populateState(account):
         Input(component_id='accountSelector', component_property='value'),
         Input(component_id='categorySelector', component_property='value'),
         Input(component_id='yearSelector', component_property='value'),
-        Input(component_id='monthSelector', component_property='value'),
-        Input(component_id='stateSelector', component_property='value')
+        Input(component_id='monthSelector', component_property='value')
+#        Input(component_id='stateSelector', component_property='value')
                 
     ]
 )
-def updateDrawLineGraph(account,category,year,month,state):        
-    if(state=='All'):        
-        transactions = getTransactionResults(account,category,year,month)
-    
-        figure = []
-        if len(transactions) > 0:
-            figure = drawLineGraph(transactions,category,account,year,month)
-    elif(state=='Expenses'):
-        transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
-        
-        figure = []
-        if len(transactions) > 0:
-            figure = drawLineGraphByCategory(transactions,category,account,year,month)
-    elif(state=='Income'):
-        transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
-        
-        figure = []
-        if len(transactions) > 0:
-            figure = drawLineGraphByCategory(transactions,category,account,year,month)
+def updateDrawLineGraph(account,category,year,month):        
+#    if(state=='All'):        
+    transactions = getTransactionResults(account,category,year,month)
+
+    figure = []
+    if len(transactions) > 0:
+        figure = drawLineGraph(transactions,category,account,year,month)
+#    elif(state=='Expenses'):
+#        transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
+#        
+#        figure = []
+#        if len(transactions) > 0:
+#            figure = drawLineGraphByCategory(transactions,category,account,year,month)
+#    elif(state=='Income'):
+#        transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
+#        
+#        figure = []
+#        if len(transactions) > 0:
+#            figure = drawLineGraphByCategory(transactions,category,account,year,month)
 
     return figure
 
@@ -735,10 +786,15 @@ def updateDrawPieGraphExpenses(account,category,year,month):
     ]
 )
 def updateDrawBarGraphExpenses(account,category,year,month):
-    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)        
     figure = []
     if len(transactions) > 0:
-        figure = drawBarGraph(transactions)
+        if(month=="00"):        
+            figure = []
+            if len(transactions) > 0:
+                figure = drawLineGraphByCategory(transactions,category,account,year,month)
+        else:        
+            figure = drawBarGraph(transactions)
     return figure
 
 # Update Category Graph Income
@@ -771,10 +827,15 @@ def updateDrawPieGraphIncome(account,category,year,month):
     ]
 )
 def updateDrawBarGraphIncome(account,category,year,month):
-    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)        
     figure = []
     if len(transactions) > 0:
-        figure = drawBarGraph(transactions)
+        if(month=="00"):        
+            figure = []
+            if len(transactions) > 0:
+                figure = drawLineGraphByCategory(transactions,category,account,year,month)
+        else:        
+            figure = drawBarGraph(transactions)
     return figure
 
 # start Flask server
