@@ -219,6 +219,7 @@ def drawLineGraph(transactions,category,account,year,month):
             data=figureList,
             layout=go.Layout(
                 title='History Scatter Plot',
+                legend=dict(orientation="h"),
                 showlegend=True
             )
         )           
@@ -243,12 +244,45 @@ def drawLineGraph(transactions,category,account,year,month):
                 go.Scatter(x=months, y=dataPoints, mode='lines+markers',name='End Of Month Balance')
             ],
             layout=go.Layout(
-                title='History Scatter Plot',
+                title='History Scatter Plot',                
+                legend=dict(orientation="h"),
                 showlegend=True
             )
         )
         #% else statement end-------------------------------------------------------------------------
 
+    return figure
+
+def drawBarGraph(transactions):
+    transactions['Amount'] = transactions['Amount'].apply(pd.to_numeric)
+    categorySum = transactions.groupby(['MainCategory']).sum()
+    categorySumList = np.abs(categorySum['Amount'])
+    categorySumList = categorySumList.tolist()
+        
+    categoryList = np.unique(transactions['MainCategory'].astype(str))
+    categoryList = categoryList.tolist()    
+    
+    categoryDF = pd.DataFrame({
+                'CategoryName':categoryList,
+                'CategorySum':categorySumList                
+            })
+    
+    categoryDFSorted = categoryDF.sort_values(by=['CategorySum'])
+    categorySumList = categoryDFSorted['CategorySum']
+    categoryList = categoryDFSorted['CategoryName']
+    
+    #-------------------------------------------------------------------------
+#    http://pycopy.com/plotly-a-pack-of-donuts/
+#    uniqueSubCategory = transactions.Subcategory.unique().astype(str)
+    #-------------------------------------------------------------------------
+    figure = go.Figure(
+        data=[
+             go.Bar(y=categoryList, 
+                    x=categorySumList,
+                    orientation="h",
+                    )           
+        ]
+    )
     return figure
 
 def drawPieGraphExpenses(transactions):
@@ -270,7 +304,7 @@ def drawPieGraphExpenses(transactions):
              go.Pie(labels=categoryList, values=categorySumList)           
         ],
         layout=go.Layout(
-            title='Expense Categories',
+            title='Expenses',
             showlegend=True
         )
     )
@@ -370,7 +404,7 @@ def drawPieGraphIncome(transactions):
              go.Pie(labels=categoryList, values=categorySumList)           
         ],
         layout=go.Layout(
-            title='Income Categories',
+            title='Income',
             showlegend=True
         )
     )
@@ -418,118 +452,146 @@ app.scripts.append_script({
     "external_url": my_js_url
 })
 
+# NOTE: The layout design for dash can be found here:
+#    https://codepen.io/chriddyp/pen/bWLwgP
 app.layout = html.Div([
     # Links
 #    html.Link(href='myCSS.css', rel='stylesheet'),
     
-    # Page Header
-    html.Header([
-        html.Div([
-            html.H1('TITLE V12 - Monthly searches',className="mdl-layout__header-row"),            
-        ]),            
-    ],className="mdl-layout__header"),
-
-    # Page Main
-    html.Main([
-        # Page Content
-        html.Div([
-            #Partision of page
+        # Page Header
+        html.Header([
             html.Div([
-                # Auto Population
+                html.H1('TITLE V13 - Change Layout',className="mdl-layout__header-row"),            
+            ]),            
+        ],className="mdl-layout__header"),
+    
+        # Page Main Start
+        html.Main([
+                # Page Content Start
                 html.Div([
+                    # Partision of page start
                     html.Div([
-                        # Account Selection 
-                        html.Div([
-                            html.Div('Account Type', className='three columns'),
-                            html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),
-                        ],className='twelve columns'),                       
+                            # Top row start
+                            html.Div([
+                                    # Selection start
+                                    html.Div([
+                                            html.Div([
+                                                # Account Selection 
+                                                html.Div([
+                                                    html.Div('Account Type', className='three columns'),
+                                                    html.Div(dcc.Dropdown(id='accountSelector',options=onLoad_GetData(),value='All',className='nine columns')),
+                                                ],className='twelve columns'),                       
+                                                
+                                                #Category Selection
+                                                html.Div([
+                                                    html.Div('Category Type', className='three columns'),
+                                                    html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),
+                                                ],className='twelve columns'),                        
+                                            ],className='twelve columns'),
+                            
+                                            html.Div(['----------------------------------------------------']),
                         
-                        #Category Selection
-                        html.Div([
-                            html.Div('Category Type', className='three columns'),
-                            html.Div(dcc.Dropdown(id='categorySelector',value='All',className='nine columns')),
-                        ],className='twelve columns'),                        
-                    ],className='twelve columns'),
-    
-                    html.Div(['---------------------------------------------------------------']),
-
-                    html.Div([
-                        # Year Selection 
-                        html.Div([
-                            html.Div('Year', className='three columns'),
-                            html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),
-                        ],className='twelve columns'),
-    
-                        # Year Selection 
-                        html.Div([
-                            html.Div('Month', className='three columns'),
-                            html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
-                        ],className='twelve columns'),                       
-    
+                                            html.Div([
+                                                # Year Selection 
+                                                html.Div([
+                                                    html.Div('Year', className='three columns'),
+                                                    html.Div(dcc.Dropdown(id='yearSelector',value=str(datetime.now().year),className='nine columns')),
+                                                ],className='twelve columns'),
+                            
+                                                # Year Selection 
+                                                html.Div([
+                                                    html.Div('Month', className='three columns'),
+                                                    html.Div(dcc.Dropdown(id='monthSelector',value='00',className='nine columns')),
+                                                ],className='twelve columns'),                       
+                            
+                                                
+                                            ],className='twelve columns'),
                         
-                    ],className='twelve columns'),
-
-                    html.Div(['---------------------------------------------------------------']),               
-                    
-                    html.Div([
-                        # Graphing State Selection 
-                        html.Div([
-                            html.Div('Graph', className='three columns'),
-                            html.Div(dcc.Dropdown(id='stateSelector',value='All',className='nine columns')),
-                        ],className='twelve columns'),
-                    ],className='twelve columns'),                    
-                    
-                ],className="mdl-cell mdl-cell--2-col"),
-
-
-                # List
-                html.Div([
-                    # ------------------------------------------------------------------------------
-                     html.Div([
-                        dt.DataTable(
-                            # Initialise the rows
-                            columns=['Date','Account','Title','MainCategory','Amount','Balance'],
-                            rows=[{}],                            
-                            row_selectable=False,
-                            filterable=True,
-                            sortable=True,
-                            selected_row_indices=[],
-                            max_rows_in_viewport = 20,
-                            id='table'
-                        ),
-                        html.Div(id='selected-indexes')
-                    ]),
-                    # ------------------------------------------------------------------------------    
-                ],className="mdl-cell mdl-cell--4-col"),
-    
-                # Graphs
-                html.Div([
-                    # Top Row Plots
-                    html.Div([
-                        #Scatter Plot
-#                        html.Button('Refresh', id='buttonRefresh'),
-                        dcc.Graph(id='lineGraph')
-                    ]),   
-                    
-                    # Bottom Row Plots
-#                    https://community.plot.ly/t/two-graphs-side-by-side/5312
-                    html.Div([
-                        html.Div([
-#                            html.Button('Plot Expenses', id='buttonExpense'),
-                            dcc.Graph(id='categoryGraphExpenses')
-                        ], className="six columns"),
-                
-                        html.Div([
-#                            html.Button('Plot Income', id='buttonIncome'),
-                            dcc.Graph(id='categoryGraphIncome')
-                        ], className="six columns"),
-                    ], className="row")
-                ],className="mdl-cell mdl-cell--6-col"),
-            
-            ],className="mdl-grid"),
-                
-        ],className='page-content')        
-    ],className='mdl-layout__content')   
+                                            html.Div(['----------------------------------------------------']),               
+                                            
+                                            html.Div([
+                                                # Graphing State Selection 
+                                                html.Div([
+                                                    html.Div('Graph', className='three columns'),
+                                                    html.Div(dcc.Dropdown(id='stateSelector',value='All',className='nine columns')),
+                                                ],className='twelve columns'),
+                                            ],className='twelve columns'),                                    
+                                    # Selection end
+                                    ], className="two columns"),
+                                    
+                                    # table start
+                                    html.Div([
+                                        # ------------------------------------------------------------------------------
+                                         html.Div([
+                                            dt.DataTable(
+                                                # Initialise the rows
+                                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                                rows=[{}],                            
+                                                row_selectable=False,
+                                                filterable=True,
+                                                sortable=True,
+                                                selected_row_indices=[],
+                                                max_rows_in_viewport = 10,
+                                                id='table'
+                                            ),
+                                            html.Div(id='selected-indexes')
+                                        ]),
+                                        # ------------------------------------------------------------------------------                                                
+                                    # table end
+                                    ], className="six columns"),
+                                    
+                                    # Graph start
+                                    html.Div([
+                                        # ------------------------------------------------------------------------------
+                                         # Top Row Plots
+                                            html.Div([
+                                                #Scatter Plot
+                        #                        html.Button('Refresh', id='buttonRefresh'),
+                                                dcc.Graph(id='lineGraph')
+                                            ]),  
+                                        # ------------------------------------------------------------------------------                                                
+                                    # Graph end
+                                    ], className="four columns"),
+                            # top row end        
+                            ], className="twelve columns"),
+                            
+                            # Bottom row start
+                            html.Div([
+                                # Bottom Row Plots
+            #                    https://community.plot.ly/t/two-graphs-side-by-side/5312
+                                html.Div([
+                                    html.Div([
+            #                            html.Button('Plot Expenses', id='buttonExpense'),
+                                        dcc.Graph(id='categoryGraphExpenses')
+                                    ], className="six columns"),
+                            
+                                    html.Div([
+#                                        html.H1('Table')
+            #                            html.Button('Plot Income', id='buttonIncome'),            
+                                        dcc.Graph(id='categoryBarGraphExpenses')
+                                    ], className="six columns"),
+                                ], className="six columns"),
+                                
+                                html.Div([
+                                    html.Div([
+            #                            html.Button('Plot Expenses', id='buttonExpense'),
+                                        dcc.Graph(id='categoryGraphIncome')
+                                    ], className="six columns"),
+                            
+                                    html.Div([
+            #                            html.Button('Plot Income', id='buttonIncome'),
+#                                        html.H1('Table')
+                                        dcc.Graph(id='categoryBarGraphIncome')
+                                    ], className="six columns"),
+                                ], className="six columns")                                    
+                            # bottom row end        
+                            ], className="twelve columns")
+                    # Partision of page end
+                    ],className="mdl-grid"),
+                # Page content end
+                ],className='page-content')        
+        # Page Main End
+        ],className='mdl-layout__content')
         
     
     ],className='mdl-layout mdl-js-layout mdl-layout--fixed-header')
@@ -662,6 +724,23 @@ def updateDrawPieGraphExpenses(account,category,year,month):
 
     return figure
 
+#Update Category Bar Graph Expenses    
+@app.callback(
+    Output(component_id='categoryBarGraphExpenses', component_property='figure'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value'),
+        Input(component_id='monthSelector', component_property='value')
+    ]
+)
+def updateDrawBarGraphExpenses(account,category,year,month):
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)
+    figure = []
+    if len(transactions) > 0:
+        figure = drawBarGraph(transactions)
+    return figure
+
 # Update Category Graph Income
 @app.callback(
     Output(component_id='categoryGraphIncome', component_property='figure'),
@@ -679,6 +758,23 @@ def updateDrawPieGraphIncome(account,category,year,month):
     if len(transactions) > 0:
         figure = drawPieGraphIncome(transactions)
 
+    return figure
+
+#Update Category Bar Graph Expenses    
+@app.callback(
+    Output(component_id='categoryBarGraphIncome', component_property='figure'),
+    [
+        Input(component_id='accountSelector', component_property='value'),
+        Input(component_id='categorySelector', component_property='value'),
+        Input(component_id='yearSelector', component_property='value'),
+        Input(component_id='monthSelector', component_property='value')
+    ]
+)
+def updateDrawBarGraphIncome(account,category,year,month):
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)
+    figure = []
+    if len(transactions) > 0:
+        figure = drawBarGraph(transactions)
     return figure
 
 # start Flask server
