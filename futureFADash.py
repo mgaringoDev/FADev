@@ -334,13 +334,13 @@ def drawPieGraphExpenses(transactions):
         layout=go.Layout(
             autosize= True,
             margin = {
-                "r": 40,
+                "r": 5,
                 "t": 30,
                 "b": 30,
-                "l": 40
+                "l": 5
               },
             legend=dict(orientation="h"),  
-            height = 250,
+            height = 350,
             showlegend=False
         )
     )
@@ -458,13 +458,13 @@ def drawPieGraphIncome(transactions):
         layout=go.Layout(
             autosize= True,
             margin = {
-                "r": 40,
+                "r": 5,
                 "t": 30,
                 "b": 30,
-                "l": 40
+                "l": 5
               },
             legend=dict(orientation="h"),  
-            height = 250,
+            height = 300,
             showlegend=False
         )
     )
@@ -1898,15 +1898,30 @@ app.layout = html.Div([
             html.Div([
                 html.Div([                    
                     dcc.Graph(id='categoryBarGraphExpenses')                                                                
-                ], className="twelve columns"),                    
-            ], className="row "),
-            html.Div([
+                ], className="nine columns"),
                 html.Div([                    
                     dcc.Graph(id='categoryGraphExpenses')                                                                
-                ], className="six columns"),   
-                html.Div([                    
-                    html.H6("Table??")
-                ], className="six columns"),
+                ], className="three columns"),
+            ], className="row "),
+            html.Div([
+                   
+                html.Div([                                        
+                    # table start                    
+                        # ------------------------------------------------------------------------------                         
+                            dt.DataTable(
+                                # Initialise the rows
+                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                rows=[{}],                            
+                                row_selectable=False,
+                                filterable=True,
+                                sortable=True,
+                                selected_row_indices=[],
+                                max_rows_in_viewport = 7,
+                                id='tableExpense'
+                            ),
+                        # ------------------------------------------------------------------------------                                                
+                    # table end
+                ], className="twelve columns"),
             ], className="row "),
             #----------------------------------------------------------------------------
         ], className="subpage")
@@ -1914,7 +1929,7 @@ app.layout = html.Div([
     #-----------------------------------------------------------------------------------------------------------------------------------
     #%% Third Page Overview
     #-----------------------------------------------------------------------------------------------------------------------------------
-    html.Div([  # page 2
+    html.Div([  # page 3
         print_button(),
         html.Div([
             # Header
@@ -1929,15 +1944,30 @@ app.layout = html.Div([
             html.Div([
                 html.Div([                    
                     dcc.Graph(id='categoryBarGraphIncome')                                                                
-                ], className="twelve columns"),                    
-            ], className="row "),
-            html.Div([
+                ], className="nine columns"),                    
                 html.Div([                    
                     dcc.Graph(id='categoryGraphIncome')                                                                
-                ], className="six columns"),   
-                html.Div([                    
-                    html.H6("Table??")
-                ], className="six columns"),
+                ], className="three columns"),  
+            ], className="row "),
+            html.Div([                 
+                html.Div([                                        
+                    # table start                    
+                        # ------------------------------------------------------------------------------                         
+                            dt.DataTable(
+                                # Initialise the rows
+                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                rows=[{}],                            
+                                row_selectable=False,
+                                filterable=True,
+                                sortable=True,
+                                selected_row_indices=[],
+                                max_rows_in_viewport = 7,
+                                id='tableIncome'
+                            ),
+                        # ------------------------------------------------------------------------------                                                
+                    # table end
+                ], className="twelve columns"),
+                            
             ], className="row "),
             #----------------------------------------------------------------------------
         ], className="subpage")
@@ -2087,6 +2117,38 @@ def updateDrawPieGraphIncome(account,category,year,month):
         figure = drawPieGraphIncome(transactions)
 
     return figure
+
+@app.callback(
+    Output('tableExpense', 'rows'), 
+    [
+         Input(component_id='accountSelector', component_property='value'),
+         Input(component_id='categorySelector', component_property='value'),
+         Input(component_id='yearSelector', component_property='value'),
+         Input(component_id='monthSelector', component_property='value')
+    ]
+)
+def update_tableExpense(account,category,year,month):
+    """
+    For user selections, return the relevant table
+    """
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)        
+    return transactions.to_dict('records')
+
+@app.callback(
+    Output('tableIncome', 'rows'), 
+    [
+         Input(component_id='accountSelector', component_property='value'),
+         Input(component_id='categorySelector', component_property='value'),
+         Input(component_id='yearSelector', component_property='value'),
+         Input(component_id='monthSelector', component_property='value')
+    ]
+)
+def update_tableIncome(account,category,year,month):
+    """
+    For user selections, return the relevant table
+    """
+    transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)        
+    return transactions.to_dict('records')
 
 #Update Category Bar Graph Income    
 @app.callback(
