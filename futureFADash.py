@@ -77,6 +77,23 @@ def getAccounts():
     accounts.sort()
     return accounts
 
+def getAllAccounts(cat):
+    '''Returns the list of accounts that are stored in the database'''
+
+    getAccountQuery = 'SELECT * FROM myData WHERE MainCategory=\'%s\'' % cat
+    accounts = fetch_data(getAccountQuery)
+    return accounts
+
+def getAllCategories():
+    '''Returns the list of accounts that are stored in the database'''
+
+    getCategoryQuery = 'SELECT DISTINCT MainCategory FROM myData'
+    category = fetch_data(getCategoryQuery)
+    category = list(category['MainCategory'].sort_values(ascending=True))    
+    category.append('All')
+    category.sort()
+    return category
+
 def getCategories(account):
     '''Returns the list of categories that are stored in the database'''
 
@@ -483,6 +500,15 @@ def onLoad_GetData():
     )
     return accountOptions
 
+def onLoadGetAllCategories():
+    '''Actions to perform upon initial page load'''
+
+    categoryOptions = (
+        [{'label': category, 'value': category}
+         for category in getAllCategories()]
+    )
+    return categoryOptions
+
 # reusable componenets
 def make_dash_table(df):
     ''' Return a dash definition of an HTML table for a Pandas dataframe '''
@@ -573,9 +599,10 @@ def loadHeaderInfo():
     headerInfo = html.Div([
 #            get_logo(),
             get_header(),
-            html.Br([]),
+            html.Br([])
 #            get_menu(),
-            getDropDowns()])
+#            getDropDowns()
+            ])
     return headerInfo
 
 #%% My Layout
@@ -1834,6 +1861,7 @@ app.layout = html.Div([
         html.Div([
             # Header
             loadHeaderInfo(),            
+            getDropDowns(),
             # ---------------- Row For History Scatter Plot Start -------------
             html.Div([
                 html.Div([
@@ -1879,6 +1907,8 @@ app.layout = html.Div([
         ], className="subpage")
     ], className="page"),
     #-----------------------------------------------------------------------------------------------------------------------------------
+        
+    
     
     #%% Second Page Overview
     #-----------------------------------------------------------------------------------------------------------------------------------
@@ -1966,10 +1996,57 @@ app.layout = html.Div([
                             ),
                         # ------------------------------------------------------------------------------                                                
                     # table end
-                ], className="twelve columns"),
-                            
+                ], className="twelve columns"),                            
             ], className="row "),
+            #----------------------------------------------------------------------------          
+        ], className="subpage")
+    ], className="page"),
+    #-----------------------------------------------------------------------------------------------------------------------------------
+    #%% Fourth Page Overview
+    #-----------------------------------------------------------------------------------------------------------------------------------
+    html.Div([  # page 4
+        print_button(),
+        html.Div([
+            # Header
+            loadHeaderInfo(),            
             #----------------------------------------------------------------------------
+            html.Div([
+                html.Div([
+                    html.H6("Search Queries",
+                            className="gs-header gs-table-header padded"),                    
+                ], className="six columns"),
+            ], className="row "),
+            html.Div([
+                html.Div([
+                    html.Div('Category', className='three columns'),
+                    html.Div(dcc.Dropdown(id='categorySearchSelector',options=onLoadGetAllCategories(),value='Food',className='nine columns')),                                                        
+                ],className ='six columns'), 
+            ], className="row "),            
+            #----------------------------------------------------------------------------
+              html.Div([                 
+                html.Div([                                        
+                    # table start                    
+                        # ------------------------------------------------------------------------------                         
+                            dt.DataTable(
+                                # Initialise the rows
+                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                rows=[{}],                            
+                                row_selectable=False,
+                                filterable=True,
+                                sortable=True,
+                                selected_row_indices=[],
+                                max_rows_in_viewport = 10,
+                                id='tableCategory'
+                            ),
+                        # ------------------------------------------------------------------------------                                                
+                    # table end
+                ], className="twelve columns"),                            
+            #----------------------------------------------------------------------------             
+                html.Div([ 
+                        dcc.Graph(id='categorySearchGraph')                                                                
+                ], className="twelve columns"),                            
+            #----------------------------------------------------------------------------
+            ], className="row "),
         ], className="subpage")
     ], className="page")
     #-----------------------------------------------------------------------------------------------------------------------------------
@@ -1993,6 +2070,19 @@ def update_table(account,category,year,month):
     For user selections, return the relevant table
     """
     transactions = getTransactionResults(account,category,year,month)
+    return transactions.to_dict('records')
+
+@app.callback(
+    Output('tableCategory', 'rows'), 
+    [         
+         Input(component_id='categorySearchSelector', component_property='value'),         
+    ]
+)
+def update_tableCategory(category):
+    """
+    For user selections, return the relevant table
+    """
+    transactions = getAllAccounts(category)
     return transactions.to_dict('records')
 
 # Load Categories in Dropdown
