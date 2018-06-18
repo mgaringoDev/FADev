@@ -20,6 +20,7 @@ from sqlalchemy import create_engine
 import csv, sqlite3
 from datetime import datetime
 import unicodedata
+from math import log10, floor
 #%% Global
 app = dash.Dash(__name__)
 server = app.server
@@ -66,6 +67,8 @@ def fetch_data(q):
     )
     return result
 
+def round_to_1(x):
+    return round(x, -int(floor(log10(abs(x)))))
 
 def getAccounts():
     '''Returns the list of accounts that are stored in the database'''
@@ -1872,7 +1875,7 @@ app.layout = html.Div([
                          html.Div([
                             dt.DataTable(
                                 # Initialise the rows
-                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                columns=['Month','Day','Year','Account','Title','MainCategory','Amount','Balance'],
                                 rows=[{}],                            
                                 row_selectable=False,
                                 filterable=True,
@@ -1897,7 +1900,10 @@ app.layout = html.Div([
                     # ------------------------------------------------------------------------------
                      html.Div([
                         #Scatter Plot
-                        dcc.Graph(id='lineGraph')
+                        dcc.Graph(id='lineGraph',
+                                  config={
+                                        'displayModeBar': False
+                                        })
                     ]),  
                     # ------------------------------------------------------------------------------                                                
                     # table end
@@ -1927,10 +1933,16 @@ app.layout = html.Div([
             ], className="row "),
             html.Div([
                 html.Div([                    
-                    dcc.Graph(id='categoryBarGraphExpenses')                                                                
+                    dcc.Graph(id='categoryBarGraphExpenses',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
                 ], className="nine columns"),
                 html.Div([                    
-                    dcc.Graph(id='categoryGraphExpenses')                                                                
+                    dcc.Graph(id='categoryGraphExpenses',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
                 ], className="three columns"),
             ], className="row "),
             html.Div([
@@ -1940,7 +1952,7 @@ app.layout = html.Div([
                         # ------------------------------------------------------------------------------                         
                             dt.DataTable(
                                 # Initialise the rows
-                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                columns=['Month','Day','Year','Account','Title','MainCategory','Amount','Balance'],
                                 rows=[{}],                            
                                 row_selectable=False,
                                 filterable=True,
@@ -1973,10 +1985,16 @@ app.layout = html.Div([
             ], className="row "),
             html.Div([
                 html.Div([                    
-                    dcc.Graph(id='categoryBarGraphIncome')                                                                
+                    dcc.Graph(id='categoryBarGraphIncome',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
                 ], className="nine columns"),                    
                 html.Div([                    
-                    dcc.Graph(id='categoryGraphIncome')                                                                
+                    dcc.Graph(id='categoryGraphIncome',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
                 ], className="three columns"),  
             ], className="row "),
             html.Div([                 
@@ -1985,7 +2003,7 @@ app.layout = html.Div([
                         # ------------------------------------------------------------------------------                         
                             dt.DataTable(
                                 # Initialise the rows
-                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                columns=['Month','Day','Year','Account','Title','MainCategory','Amount','Balance'],
                                 rows=[{}],                            
                                 row_selectable=False,
                                 filterable=True,
@@ -2026,10 +2044,10 @@ app.layout = html.Div([
               html.Div([                 
                 html.Div([                                        
                     # table start                    
-                        # ------------------------------------------------------------------------------                         
+                        # ------------------------------------------------------------------------------                                                    
                             dt.DataTable(
                                 # Initialise the rows
-                                columns=['Date','Account','Title','MainCategory','Amount','Balance'],
+                                columns=['Month','Day','Year','Account','Title','MainCategory','Amount'],
                                 rows=[{}],                            
                                 row_selectable=False,
                                 filterable=True,
@@ -2043,8 +2061,17 @@ app.layout = html.Div([
                 ], className="twelve columns"),                            
             #----------------------------------------------------------------------------             
                 html.Div([ 
-                        dcc.Graph(id='categorySearchGraph')                                                                
-                ], className="twelve columns"),                            
+                        dcc.Graph(id='categorySearchGraph',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
+                ], className="five columns"),                            
+                html.Div([ 
+                        dcc.Graph(id='categorySearchGraphLine',
+                                  config={
+                                        'displayModeBar': False
+                                        })                                                                
+                ], className="six columns"),                            
             #----------------------------------------------------------------------------
             ], className="row "),
         ], className="subpage")
@@ -2070,6 +2097,21 @@ def update_table(account,category,year,month):
     For user selections, return the relevant table
     """
     transactions = getTransactionResults(account,category,year,month)
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[1])
+        month.append(dateSplit[0])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    #HERE
+    transactions.Amount = pd.to_numeric(transactions.Amount)
     return transactions.to_dict('records')
 
 @app.callback(
@@ -2083,6 +2125,22 @@ def update_tableCategory(category):
     For user selections, return the relevant table
     """
     transactions = getAllAccounts(category)
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[1])
+        month.append(dateSplit[0])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    #HERE
+    transactions.Amount = pd.to_numeric(transactions.Amount)
+    
     return transactions.to_dict('records')
 
 # Load Categories in Dropdown
@@ -2129,6 +2187,194 @@ def populateMonth(account):
     ]
 
 #%% Graphing Callbacks
+@app.callback(
+    Output(component_id='categorySearchGraphLine', component_property='figure'),
+    [
+        Input(component_id='categorySearchSelector', component_property='value')        
+    ]
+)
+def updateCategorySearchGraphLine(subcategory):  
+          
+    transactions = getAllAccounts(subcategory)    
+    
+    # Add month and year to the data frame
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[1])
+        month.append(dateSplit[0])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    
+    transactions.Amount = pd.to_numeric(transactions.Amount)
+    getAllSumsByYear = transactions.groupby(['Year','Month']).Amount.sum()
+    unstacked = getAllSumsByYear.unstack()
+    unstacked = unstacked.fillna(0)
+    monthlyValues = unstacked.get_values()
+    
+    yearSize = monthlyValues.shape[0]
+    monthSize = monthlyValues.shape[1]
+    
+    summaryList = []
+    
+    for y in xrange(yearSize):
+        yArray = []
+        for m in xrange(monthSize):
+            yArray.append(monthlyValues[y,m])
+        summaryList.append(yArray)
+    
+    uniqueYear = np.unique(year).tolist()
+    
+    # Get monthly Means
+    monthlyMeans = np.ndarray.tolist(unstacked.mean().get_values())
+    summaryList.append(monthlyMeans)
+    uniqueYear.append('Monthly Avg')    
+    
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    
+    
+        #Draw the scatter plot
+    figureList = []
+    
+    for yearIndex in xrange(len(summaryList)):  
+        if yearIndex >= (len(summaryList)-2):
+            figureList.append(go.Scatter(x=months, y=summaryList[yearIndex], mode='lines+markers',name=uniqueYear[yearIndex],visible=True))
+        else:
+            figureList.append(go.Scatter(x=months, y=summaryList[yearIndex], mode='lines+markers',name=uniqueYear[yearIndex],visible='legendonly'))
+    
+  
+    figure = go.Figure(
+        data=figureList,
+        layout=go.Layout(
+            autosize= True,
+            margin = {
+                "r": 40,
+                "t": 30,
+                "b": 30,
+                "l": 40
+              },
+#                title='History Scatter Plot',
+            legend=dict(orientation="v"),  
+            height = 240,
+            showlegend=True
+        )
+    )           
+    return figure
+
+@app.callback(
+    Output(component_id='categorySearchGraph', component_property='figure'),
+    [
+        Input(component_id='categorySearchSelector', component_property='value')        
+    ]
+)
+def updateCategorySearchGraph(subcategory):  
+          
+    transactions = getAllAccounts(subcategory)    
+    
+    # Add month and year to the data frame
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[0])
+        month.append(dateSplit[1])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    
+    transactions.Amount = pd.to_numeric(transactions.Amount)
+    getAllSumsByYear = transactions.groupby('Year').Amount.sum()
+    overAllMeanSum = getAllSumsByYear.mean()
+    
+    months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    
+    summaryList = []
+    
+    for y in getAllSumsByYear:
+        yearArray=[]
+        for m in xrange(len(months)):
+            yearArray.append(y*-1)
+        summaryList.append(yearArray) 
+    
+    yearArray=[]
+    for m in xrange(len(months)):
+        yearArray.append(overAllMeanSum*-1)
+    summaryList.append(yearArray)
+    
+    uniqueYear = np.unique(year).tolist()
+    uniqueYear.append('Mean of All Years')
+    
+    dataArray = []
+    for m in getAllSumsByYear:
+        m = round(m,2)
+        if m>0:
+            dataArray.append(m)
+        else:
+            dataArray.append(m*-1)
+    
+    overAllMeanSum = round(overAllMeanSum,2)
+    if overAllMeanSum>0:        
+        dataArray.append(overAllMeanSum)
+    else:
+        dataArray.append(overAllMeanSum*-1.00)
+    
+    
+    figure = go.Figure(
+        data=[
+             go.Bar(x=dataArray, 
+                    y=uniqueYear,
+                    text=dataArray,
+                    textposition = 'auto',
+                    orientation = 'h'
+                    )           
+        ],
+        layout=go.Layout(
+            autosize= True,
+            margin = {
+                "r": 40,
+                "t": 30,
+                "b": 30,
+                "l": 40
+              },            
+            height = 240,            
+        )
+    )
+        
+#    #Draw the scatter plot
+#    figureList = []
+#    
+#    for yearIndex in xrange(len(summaryList)):  
+#        figureList.append(go.Scatter(x=months, y=summaryList[yearIndex], mode='lines+markers',name=uniqueYear[yearIndex]))
+#    
+#  
+#    figure = go.Figure(
+#        data=figureList,
+#        layout=go.Layout(
+#            autosize= True,
+#            margin = {
+#                "r": 40,
+#                "t": 30,
+#                "b": 30,
+#                "l": 40
+#              },
+##                title='History Scatter Plot',
+##                legend=dict(orientation="v"),  
+#            height = 240,
+#            showlegend=True
+#        )
+#    )           
+    return figure
+
 @app.callback(
     Output(component_id='lineGraph', component_property='figure'),
     [
@@ -2222,6 +2468,21 @@ def update_tableExpense(account,category,year,month):
     For user selections, return the relevant table
     """
     transactions = getTransactionResultsForSubcategory(account,category,year,'Credit',month)        
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[1])
+        month.append(dateSplit[0])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    #HERE
+    transactions.Amount = pd.to_numeric(transactions.Amount)
     return transactions.to_dict('records')
 
 @app.callback(
@@ -2238,6 +2499,21 @@ def update_tableIncome(account,category,year,month):
     For user selections, return the relevant table
     """
     transactions = getTransactionResultsForSubcategory(account,category,year,'Debit',month)        
+    dateAll = transactions.Date
+    day = []
+    month = []
+    year = []
+    for date in dateAll:
+        dateSplit = date.split('/')
+        day.append(dateSplit[1])
+        month.append(dateSplit[0])
+        year.append(dateSplit[2])
+    
+    transactions['Day'] = day
+    transactions['Month'] = month
+    transactions['Year'] = year
+    #HERE
+    transactions.Amount = pd.to_numeric(transactions.Amount)
     return transactions.to_dict('records')
 
 #Update Category Bar Graph Income    
